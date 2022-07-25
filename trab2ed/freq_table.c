@@ -2,19 +2,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#define ASCII 256
 
 #define forn(i , n) for( int i =0; i < n; i++)
 
 struct freq_table{
-    unsigned long long int freq_vector[256];
+    unsigned long long int freq_vector[ASCII];
 };
 
 Freq_Table* init_freq_table(void){
-    Freq_Table* f_tbl = (Freq_Table*)malloc(sizeof(Freq_Table));
-    forn(i , 256){
-        f_tbl->freq_vector[i] =0;
-    }
+    Freq_Table* f_tbl = (Freq_Table*)calloc(1,sizeof(Freq_Table));
+
     return f_tbl;
 }
 
@@ -33,7 +31,7 @@ void free_freq_table(Freq_Table* f_tble){
 }
 
 void show_freq_table(Freq_Table* f_tbl){
-    forn(i , 256){
+    forn(i , ASCII){
         if(f_tbl->freq_vector[i]) printf("%c: %lld\n", (char)i, f_tbl->freq_vector[i]);
     }
     return ;
@@ -41,10 +39,12 @@ void show_freq_table(Freq_Table* f_tbl){
 
 
 void fread_freq_table(Freq_Table* f_table, FILE * file){
-    fseek(file, 0, SEEK_SET);
-    char c = 0;
-    while(fread(&c, 1, 1, file)){
-        int index = (int)c;
-        insert_freq_table(f_table, index);
+    int c = 0;
+    while(1){
+        c = fgetc(file);
+        if( feof(file)){
+            break;
+        }
+        f_table->freq_vector[c] ++;
     }
 }

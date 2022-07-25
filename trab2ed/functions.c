@@ -3,13 +3,13 @@
 #include <stdlib.h>
 #include "heap.h"
 #include "freq_table.h"
-
+#define ASCII 256
 
 
 #define forn(i, n) for(int i =0; i < n ; i ++)
 
 void fill_heap_with_freq_table(binary_heap* b, Freq_Table* f_tbl){
-    forn(i , 256){
+    forn(i , ASCII){
         if(get_freq_table(f_tbl, i)){
             tree* aux = new(get_freq_table(f_tbl, i), (char)i);
             insert(b, aux);

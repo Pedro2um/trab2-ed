@@ -28,20 +28,22 @@ int main(int argc, char* argv[]) {
     else if( x == 2) unzip(argv[2]);
     else assert(0);
      */
-    FILE* f = fopen("ola.txt", "rb");
+    FILE* f = fopen("filme.mkv", "rb");
+    if(f == NULL ) exit (1);
     Freq_Table * f_tbl = init_freq_table();
-    binary_heap* b = new_binary_heap();
+
 
     fread_freq_table(f_tbl, f);
 
+   binary_heap * b = new_binary_heap();
+   fill_heap_with_freq_table(b, f_tbl);
+   tree* ruffman = ruffman_tree_constructor(b);
+   show_tree(ruffman);
 
-    fill_heap_with_freq_table(b, f_tbl);
 
-    tree* ruffman =  ruffman_tree_constructor(b);
-    show_tree(ruffman);
 
-    fclose(f);
     free_freq_table(f_tbl);
+    fclose(f);
     delete_binary_heap(b);
     erase(ruffman);
 
