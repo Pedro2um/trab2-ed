@@ -2,6 +2,7 @@
 #define TREE_C
 
 #include "tree.h"
+#include "headers.h"
 //
 // Created by user on 7/24/2022.
 //
@@ -30,6 +31,12 @@ tree* new(llu freq, char c){
         fprintf(stderr,"ERROR, NEW TREE IS NOT ALLOCATED\n");
         exit(1);
     }
+
+    new_tree->c =c;
+    new_tree->freq = freq;
+    new_tree->left = NULL;
+    new_tree->right = NULL;
+
     return new_tree;
 }
 
@@ -65,10 +72,17 @@ static tree* e(tree* h){
 void erase(tree* root){
     if(root == NULL) return;
     e(root);
-    free(root);
+
 }
 
-
+void show_tree(tree* a){
+    if(!a)return;
+    printf("< %c: %lld", a->c, a->freq);
+    show_tree(a->left);
+    show_tree(a->right);
+    printf(" >");
+    return;
+}
 
 
 #endif

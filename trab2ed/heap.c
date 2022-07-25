@@ -79,4 +79,17 @@ void delete_binary_heap(binary_heap* a){
     free(a);
 }
 
+
+void show_binary_heap(binary_heap* a ){
+    if(!a) return;
+    for(int i =0; i < a->n; i ++){
+        show_tree(a->h[i]);
+    }
+    return ;
+}
+
+int get_tam_binary_heap(binary_heap* a ){
+    return a->n;
+}
+
 #endif

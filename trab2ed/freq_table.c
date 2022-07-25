@@ -7,12 +7,14 @@
 #define forn(i , n) for( int i =0; i < n; i++)
 
 struct freq_table{
-    int freq_vector[256];
+    unsigned long long int freq_vector[256];
 };
 
 Freq_Table* init_freq_table(void){
     Freq_Table* f_tbl = (Freq_Table*)malloc(sizeof(Freq_Table));
-    memset(f_tbl->freq_vector, 0 , sizeof(int)*256);
+    forn(i , 256){
+        f_tbl->freq_vector[i] =0;
+    }
     return f_tbl;
 }
 
@@ -21,7 +23,7 @@ void insert_freq_table(Freq_Table* f_tbl, int i){
     return ;
 }
 
-int get_freq_table(Freq_Table* f_tbl, int i){
+long long unsigned int get_freq_table(Freq_Table* f_tbl, int i){
     return f_tbl->freq_vector[i];
 }
 
@@ -32,7 +34,7 @@ void free_freq_table(Freq_Table* f_tble){
 
 void show_freq_table(Freq_Table* f_tbl){
     forn(i , 256){
-        if(f_tbl->freq_vector[i]) printf("%c: %d\n", (char)i, f_tbl->freq_vector[i]);
+        if(f_tbl->freq_vector[i]) printf("%c: %lld\n", (char)i, f_tbl->freq_vector[i]);
     }
     return ;
 }

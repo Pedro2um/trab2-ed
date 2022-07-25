@@ -4,12 +4,18 @@
 
 #ifndef TRAB2ED_TREE_H
 #define TRAB2ED_TREE_H
-#include "headers.h"
+
 
 
 
 
 typedef struct tree tree;
+
+#include <stdio.h>
+#include <stdlib.h>
+typedef long long unsigned llu;
+typedef long long ll;
+typedef long double ld;
 
 /*
  * Alocação de memória
@@ -30,6 +36,8 @@ llu get_weight(tree* a);
  *  Desalocação de memória
  */
 void erase(tree* a);
+
+void show_tree(tree* a);
 
 
 
