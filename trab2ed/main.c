@@ -28,7 +28,14 @@ int main(int argc, char* argv[]) {
     else if( x == 2) unzip(argv[2]);
     else assert(0);
      */
-    FILE* f = fopen("filme.mkv", "rb");
+    
+    
+    
+    
+    
+    
+    
+    FILE* f = fopen("furao.jpeg", "rb");
     if(f == NULL ) exit (1);
     Freq_Table * f_tbl = init_freq_table();
 
@@ -40,12 +47,18 @@ int main(int argc, char* argv[]) {
    tree* ruffman = ruffman_tree_constructor(b);
    show_tree(ruffman);
 
+    printf("\n%d\n", height_tree(ruffman));
 
+    Code_Table* c_tbl = init_code_table();
+    
+    fill_code_table(c_tbl, ruffman);
+    show_code_table(c_tbl);
 
+    free_code_table(c_tbl);
     free_freq_table(f_tbl);
     fclose(f);
     delete_binary_heap(b);
     erase(ruffman);
-
+    
     return 0;
 }

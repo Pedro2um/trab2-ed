@@ -7,48 +7,47 @@
 
 #define ASCII 256
 
+typedef struct code Code;
+
+struct code {
+    char * string;
+};
+
 struct code_table{
-    char* string_arr[256];
+    Code code_arr[256];
 };
 
 Code_Table* init_code_table(void){
-    Code_Table* c_tbl = (Code_Table*)calloc(1,sizeof(Code_Table));
-    for(int i =0; i < ASCII; i ++){
-        c_tbl->string_arr[i] = NULL;
+    Code_Table* c_table= (Code_Table*)calloc(1,sizeof(Code_Table));
+    for(int i =0; i< ASCII; i ++){
+        c_table->code_arr[i].string = NULL;
     }
-    return c_tbl;
+    return c_table;
 }
 
-void insert_code_table(Code_Table* c_table, char* string , int index){
-    if(c_table == NULL) return ;
-    if(c_table->string_arr[index]) free(c_table->string_arr[index]);
-    c_table->string_arr[index] = strdup(string);
-    return ;
-}
 
+void insert_code_table(Code_Table* c_table, char* string , unsigned char index){
+    if(!c_table) return;
+    c_table->code_arr[(unsigned int )index].string = strdup(string);
+}
 
 void free_code_table(Code_Table* c_table){
-    if(c_table == NULL) return;
+    if(!c_table) return;
     for(int i =0; i < ASCII; i ++){
-        if(c_table->string_arr[i]){
-            free(c_table->string_arr[i]);
-        }
+        if(c_table->code_arr[i].string != NULL) free(c_table->code_arr[i].string);
+
     }
     free(c_table);
-    return ;
 }
 
-
 char * get_code_table(Code_Table* c_table, int index){
-    if(c_table == NULL) return NULL;
-    return c_table->string_arr[index];
+    return c_table->code_arr[index].string;
 }
 
 void show_code_table(Code_Table* c_table){
-    if(c_table == NULL) return;
-    printf("\n");
+    if(!c_table) return;
     for(int i =0; i < ASCII; i ++){
-        if(c_table->string_arr[i]) printf("%s\n", c_table->string_arr[i]);
+        if(c_table->code_arr[i].string != NULL) printf("%c : %s\n", (char)i ,c_table->code_arr[i].string);
     }
-    return ;
+    return;
 }

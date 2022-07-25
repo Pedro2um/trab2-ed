@@ -16,7 +16,7 @@ typedef struct tree tree;
  * Convenção adotada: caminhar para a esquerda de um nó, equivale a o bit 0, para a direita o bit 1
  */
 struct tree{
-    char c;
+    unsigned char c;
     llu freq;
     tree* right;
     tree* left;
@@ -92,6 +92,24 @@ static int max(int a, int b){
 int height_tree(tree* a){
     if(a == NULL) return -1;
     return (1 + max(height_tree(a->right), height_tree(a->left)));
+}
+
+
+char get_char(tree* a){
+    return a->c;
+}
+
+int its_leaf(tree*a){
+    return (a->left == NULL && a->right == NULL) ? 1 : 0;
+}
+
+tree* left_child(tree* a ){
+    return a->left;
+}
+
+
+tree* right_child(tree* a){
+    return a->right;
 }
 
 #endif

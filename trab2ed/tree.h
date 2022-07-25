@@ -33,6 +33,11 @@ tree* merge(tree* a, tree* b);
 llu get_weight(tree* a);
 
 /*
+* Retorna o char do nó
+*/
+char get_char(tree* a);
+
+/*
  *  Desalocação de memória
  */
 void erase(tree* a);
@@ -52,5 +57,16 @@ void show_tree(tree* a);
 */
 int height_tree(tree* a);
 
+
+/*
+*
+*   Verifica se é folha
+*/
+int its_leaf(tree*a );
+
+
+tree* left_child(tree* a );
+
+tree* right_child(tree* a);
 
 #endif //TRAB2ED_TREE_H
