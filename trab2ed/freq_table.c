@@ -42,7 +42,7 @@ void fread_freq_table(Freq_Table* f_table, FILE * file){
     int c = 0;
     while(1){
         c = fgetc(file);
-        if( feof(file)){
+        if(feof(file)){
             break;
         }
         f_table->freq_vector[c] ++;

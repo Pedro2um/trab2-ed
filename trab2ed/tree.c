@@ -85,4 +85,13 @@ void show_tree(tree* a){
 }
 
 
+static int max(int a, int b){
+    return ( a > b ) ? a : b;
+}
+
+int height_tree(tree* a){
+    if(a == NULL) return -1;
+    return (1 + max(height_tree(a->right), height_tree(a->left)));
+}
+
 #endif

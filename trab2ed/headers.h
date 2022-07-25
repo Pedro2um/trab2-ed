@@ -23,5 +23,6 @@ typedef long double ld;
 #include "heap.h"
 #include "tree.h"
 #include "functions.h"
+#include "code_table.h"
 
 #endif //TRAB2ED_HEADERS_H

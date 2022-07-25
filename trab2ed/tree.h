@@ -37,8 +37,20 @@ llu get_weight(tree* a);
  */
 void erase(tree* a);
 
+
+/*
+*
+* imprime a arvore
+*/
+
 void show_tree(tree* a);
 
+
+/*
+*
+*   Calcula a altura da árvore
+*/
+int height_tree(tree* a);
 
 
 #endif //TRAB2ED_TREE_H
