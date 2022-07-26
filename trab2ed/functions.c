@@ -13,11 +13,13 @@
 
 #define forn(i, n) for(int i =0; i < n ; i ++)
 
+
 /*headers *****************************************************************************************************/
 
 static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, int * rem, unsigned int MAX_SIZE);
 void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv );
 void unzip(char * dir );
+static tree* recover_tree(bitmap* map);
 
 /***************************************************************************************************************/
 void fill_heap_with_freq_table(binary_heap* b, Freq_Table* f_tbl){
@@ -167,12 +169,10 @@ void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv ){
     code_and_write_bitmap(f, f_zip, c_tbl, 0 , (unsigned int)1024*1024*8*256);
 
 
-    fclose(f_zip);
 
-    f_zip = fopen(f_zip_dir, "rb");
     unzip(f_zip_dir);
 
-
+    fclose(f_zip);
     free(f_zip_dir);
 
 
@@ -239,12 +239,15 @@ static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, i
 
 
 void unzip(char * dir ){
+
     FILE* f = fopen(dir, "rb");
 
     fseek(f, 0 ,SEEK_SET);
     char separator[2] =".";
     char * aux = strtok(dir, separator);
-    char name_f[strlen(aux) + 1 ];
+
+    char name_f[strlen(aux + 1)] ;
+
     strcpy(name_f, aux);
     aux = strtok(NULL, separator);
     int res = strcmp("comp", aux);
@@ -254,11 +257,9 @@ void unzip(char * dir ){
         exit (1);
     }
 
-    
-
     unsigned char c_read = 0;
     c_read = fgetc(f);
-    
+
     char terminator[c_read + 2 ];
     terminator[0] = '.';
     unsigned int n = c_read;
@@ -273,19 +274,38 @@ void unzip(char * dir ){
     printf("\n\n%s\n\n", name_f);
 
 
-    char new_dir[strlen(name_f) + 1 + strlen("./newfile/")] ;
-    memset(new_dir, 0, strlen(name_f) + 1 + strlen("./newfile/"));
+    char * new_dir = (char*)calloc(1,sizeof(char)*(strlen(name_f) + 1 + strlen("./newfile/")));
     strcpy(new_dir, "./newfile/");
     strcat(new_dir, name_f);
 
     printf("%s", new_dir);
 
-    FILE* new_f = fopen(new_dir, "rb");
+    FILE* new_f = fopen(new_dir, "wb");
+
+    int tree_size_bits = 0;
+
+    /*c_read = fgetc(f);
+    tree_size += c_read;
+    c_read = fgetc(f);
+    tree_size += c_read*256;
+
+    bitmap* recovered_tree = bitmapInit(tree_size);
+
+    int tree_size_bytes =0;
+    if()
+
+    char * tree_arr[] 
+
+    */
     fclose(new_f);
-    
+    free(new_dir);
     fclose(f);
    
     return ;
 
+
+}
+
+static tree* recover_tree(bitmap* map){
 
 }
