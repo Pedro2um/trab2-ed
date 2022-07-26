@@ -17,6 +17,7 @@
 
 static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, int * rem, unsigned int MAX_SIZE);
 void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv );
+void unzip(char * dir );
 
 /***************************************************************************************************************/
 void fill_heap_with_freq_table(binary_heap* b, Freq_Table* f_tbl){
@@ -111,7 +112,7 @@ void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv ){
     char * f_zip_dir = (char*)calloc(1 , sizeof(char)*(strlen(aux) + 6 ));
     
     strcpy(f_zip_dir, aux);
-    strcat(f_zip_dir, ".comp\0");
+    strcat(f_zip_dir, ".comp");
 
 
 
@@ -167,7 +168,14 @@ void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv ){
 
 
     fclose(f_zip);
+
+    f_zip = fopen(f_zip_dir, "rb");
+    unzip(f_zip_dir);
+
+
     free(f_zip_dir);
+
+
     
     return ;
 }
@@ -230,6 +238,54 @@ static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, i
 
 
 
-void unzip(FILE * f){
+void unzip(char * dir ){
+    FILE* f = fopen(dir, "rb");
+
+    fseek(f, 0 ,SEEK_SET);
+    char separator[2] =".";
+    char * aux = strtok(dir, separator);
+    char name_f[strlen(aux) + 1 ];
+    strcpy(name_f, aux);
+    aux = strtok(NULL, separator);
+    int res = strcmp("comp", aux);
+
+    if(res !=0 ){
+        printf("arquivo com terminação nao esperada");
+        exit (1);
+    }
+
     
+
+    unsigned char c_read = 0;
+    c_read = fgetc(f);
+    
+    char terminator[c_read + 2 ];
+    terminator[0] = '.';
+    unsigned int n = c_read;
+
+    for(int i =1; i < n + 1 ; i ++){
+        c_read = fgetc(f);
+        terminator[i] = c_read;
+    }
+    terminator[n + 1] = '\0';
+
+    strcat(name_f, terminator);
+    printf("\n\n%s\n\n", name_f);
+
+
+    char new_dir[strlen(name_f) + 1 + strlen("./newfile/")] ;
+    memset(new_dir, 0, strlen(name_f) + 1 + strlen("./newfile/"));
+    strcpy(new_dir, "./newfile/");
+    strcat(new_dir, name_f);
+
+    printf("%s", new_dir);
+
+    FILE* new_f = fopen(new_dir, "rb");
+    fclose(new_f);
+    
+    fclose(f);
+   
+    return ;
+
+
 }
