@@ -13,9 +13,12 @@
 
 #define forn(i, n) for(int i =0; i < n ; i ++)
 
+/*headers *****************************************************************************************************/
 
 static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, int * rem, unsigned int MAX_SIZE);
+void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv );
 
+/***************************************************************************************************************/
 void fill_heap_with_freq_table(binary_heap* b, Freq_Table* f_tbl){
     forn(i , ASCII){
         if(get_freq_table(f_tbl, i)){
@@ -160,25 +163,10 @@ void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv ){
 
     bitmapLibera(map_coded_tree);
 
-    code_and_write_bitmap(f, f_zip, c_tbl, 0 , 8);
+    code_and_write_bitmap(f, f_zip, c_tbl, 0 , (unsigned int)1024*1024*8*256);
 
 
     fclose(f_zip);
-
-    f_zip = fopen(f_zip_dir , "rb");
-    unsigned char aux_vet [13];
-    unsigned char aux_ ;
-    for(int i =0; i< 13; i ++){
-        aux_ = fgetc(f_zip);
-        aux_vet[i] = aux_;
-    }
-    puts("");
-    for(int i =0; i< 13; i ++){
-        printf("%d " , aux_vet[i]);
-    }
-
-
-
     free(f_zip_dir);
     
     return ;
@@ -218,7 +206,7 @@ static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, i
 
     }
 
-    int n_aprox = 8 - (bitmapGetLength(b)%8);
+    unsigned char  n_aprox = 8 - (bitmapGetLength(b)%8);
 
     if(bitmapGetLength != 0 ){
         char * contents = bitmapGetContents(b);
@@ -231,11 +219,17 @@ static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, i
         fwrite((void*)contents, sizeof(char)*lenght_byte , 1, f_out);    
     }
 
-    if(n_aprox != 0 ) fwrite((void*)&n_aprox, sizeof(char), 1, f_out);
+   fwrite((void*)&n_aprox, sizeof(char), 1, f_out);
 
 
 
 
     bitmapLibera(b);
 
+}
+
+
+
+void unzip(FILE * f){
+    
 }
