@@ -14,6 +14,6 @@ tree* ruffman_tree_constructor(binary_heap* b);
 
 void fill_code_table(Code_Table* c_tbl, tree* a );
 
-void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char* dir );
+void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv );
 
 #endif 

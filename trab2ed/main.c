@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
     show_code_table(c_tbl);
 
 
-   zip(f, c_tbl, ruffman, argv[1]);
+   zip(f, c_tbl, ruffman, argv);
 
     free_code_table(c_tbl);
     free_freq_table(f_tbl);

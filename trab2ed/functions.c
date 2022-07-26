@@ -97,9 +97,9 @@ static void write_coded_tree(tree* a, FILE* f, bitmap* map){
     }
 }
 
-void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char * dir ){
+void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv ){
 
-
+    char * dir = _argv[1]; 
     char separator[2] = ".";
     char * aux  = strtok(dir , separator);
     char * f_zip_dir = (char*)calloc(1 , sizeof(char)*(strlen(aux) + 6 ));
@@ -158,6 +158,33 @@ void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char * dir ){
 
     bitmapLibera(map_coded_tree);
     fclose(f_zip);
+
+
+
     
     return ;
+}
+
+
+static void code_and_write_bitmap(FILE* f,Code_Table* c_table, int * rem, unsigned int MAX_SIZE){
+    fseek(f, 0, SEEK_SET);
+    bitmap* b = bitmapInit(MAX_SIZE);
+
+    unsigned char c =0;
+    while(1){
+        c = fgetc(f);
+        char * string = get_code_table(c_table, (unsigned int )c);
+        int index =0;
+        while(1){
+            if(string[index] != '\0'){
+                if(string[index] != '0') bitmapAppendLeastSignificantBit(b , 0x01);
+                else bitmapAppendLeastSignificantBit(b, 0);
+                index ++;
+            }
+        }
+    }
+
+
+    bitmapLibera(b);
+
 }
