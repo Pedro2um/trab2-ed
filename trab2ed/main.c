@@ -30,12 +30,8 @@ int main(int argc, char* argv[]) {
      */
     
     
-    
-    
-    
-    
-    
-    FILE* f = fopen("furao.jpeg", "rb");
+
+    FILE* f = fopen(argv[1], "rb");
     if(f == NULL ) exit (1);
     Freq_Table * f_tbl = init_freq_table();
 
@@ -53,6 +49,9 @@ int main(int argc, char* argv[]) {
     
     fill_code_table(c_tbl, ruffman);
     show_code_table(c_tbl);
+
+
+   zip(f, c_tbl, ruffman, argv[1]);
 
     free_code_table(c_tbl);
     free_freq_table(f_tbl);

@@ -6,8 +6,10 @@
 #include "code_table.h"
 #include "tree.h"
 #include <string.h>
+#include "bitmap.h"
 #define ASCII 256
 
+#define BYTE_SIZE 8
 
 #define forn(i, n) for(int i =0; i < n ; i ++)
 
@@ -31,8 +33,7 @@ tree* ruffman_tree_constructor(binary_heap* b){
 static void private_fill_code_table(Code_Table* c_tbl , tree* a, char * string, int index){
     if(!a) return;
     if(its_leaf(a)){
-        string[index + 1 ] = '\0';
-        
+        string[index] = '\0';
         insert_code_table(c_tbl, string , get_char(a));
     }else{
         string[index] = '0';
@@ -54,5 +55,109 @@ void fill_code_table(Code_Table* c_tbl, tree* a ){
     private_fill_code_table(c_tbl, a, string , 0);
     return ;
 
+}
 
+static int get_size_coded_tree(tree* a ){
+    if(!a) return 0;
+    if(its_leaf(a)){
+        return BYTE_SIZE + 1 ;
+    }else{
+        return 1 + get_size_coded_tree(left_child(a)) + get_size_coded_tree(right_child(a));
+    }
+}
+
+static void imprime_arvore_cd(tree* a){
+    if(!a) return ;
+    if(its_leaf(a)){
+        printf("1%c", get_char(a));
+    }else{
+        printf("0");
+        imprime_arvore_cd(left_child(a));
+        imprime_arvore_cd(right_child(a));
+    }
+    return ;
+}
+
+static void write_coded_tree(tree* a, FILE* f, bitmap* map){
+    if(!a) return ;
+
+    if(its_leaf(a)){
+        bitmapAppendLeastSignificantBit(map, 0x01);
+        unsigned int aux = 0x80;
+        unsigned char c = get_char(a);
+        for(; aux !=0; aux >>= 1){
+            unsigned int and = aux & c;
+            if(and) bitmapAppendLeastSignificantBit(map, 0x01);
+            else bitmapAppendLeastSignificantBit(map, 0);
+        }
+    }else{
+        bitmapAppendLeastSignificantBit(map, 0);
+        write_coded_tree(left_child(a),f , map);
+        write_coded_tree(right_child(a), f ,map);
+    }
+}
+
+void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char * dir ){
+
+
+    char separator[2] = ".";
+    char * aux  = strtok(dir , separator);
+    char * f_zip_dir = (char*)calloc(1 , sizeof(char)*(strlen(aux) + 6 ));
+    
+    strcpy(f_zip_dir, aux);
+    strcat(f_zip_dir, ".comp\0");
+
+
+
+    FILE* f_zip = fopen(f_zip_dir,"wb");
+    free(f_zip_dir);
+    
+    aux = strtok(NULL, separator);
+
+    unsigned char c_fwrite = strlen(aux);
+  
+
+
+    /*escrevendo bits de controle para o tipo de extensão anterior a compressao*/
+    /*na ordem, é impresso quantos bytes tem a terminação e a terminação em si*/
+    fwrite((void*)&c_fwrite, 1, sizeof(char), f_zip);
+    fwrite((void*)aux , 1 , sizeof(char)*((unsigned int )c_fwrite), f_zip);
+       
+    unsigned int coded_tree_size = get_size_coded_tree(ruffman); 
+    printf("\n%d\n", coded_tree_size);
+    /*escrevendo em dois bytes o tamanho da arvore codificada
+    **é um numero binario impresso ao contrario (AB)- > (BA)*/
+    c_fwrite = coded_tree_size%256;
+    fwrite((void*)&c_fwrite, 1 , sizeof(char), f_zip);
+    c_fwrite = coded_tree_size/256;
+    fwrite((void*)&c_fwrite, 1 , sizeof(char), f_zip);
+
+
+    bitmap * map_coded_tree = bitmapInit(coded_tree_size);
+    write_coded_tree(ruffman, f_zip, map_coded_tree );
+
+    unsigned int qtd_bytes =0;
+    unsigned int l = bitmapGetLength(map_coded_tree)/8;
+
+    if(bitmapGetLength(map_coded_tree)%8 == 0) qtd_bytes = l;
+    else qtd_bytes = l + 1;
+
+    unsigned char * contents = bitmapGetContents(map_coded_tree);
+
+    for(int i =0; i < bitmapGetLength(map_coded_tree); i ++){
+       int n = bitmapGetBit(map_coded_tree, i );
+       printf("%d", n );
+    }
+
+    /*escrevendo arvore no arquivo*/
+    for(int i =0; i < qtd_bytes; i ++){
+        char c = contents[i];
+        fwrite((void*)&c, 1, sizeof(char), f_zip);
+    }
+    
+
+    bitmapLibera(map_coded_tree);
+    fclose(f_zip);
+    
+    return ;
 }
