@@ -13,6 +13,9 @@
 
 #define forn(i, n) for(int i =0; i < n ; i ++)
 
+
+static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, int * rem, unsigned int MAX_SIZE);
+
 void fill_heap_with_freq_table(binary_heap* b, Freq_Table* f_tbl){
     forn(i , ASCII){
         if(get_freq_table(f_tbl, i)){
@@ -110,7 +113,6 @@ void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv ){
 
 
     FILE* f_zip = fopen(f_zip_dir,"wb");
-    free(f_zip_dir);
     
     aux = strtok(NULL, separator);
 
@@ -120,17 +122,17 @@ void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv ){
 
     /*escrevendo bits de controle para o tipo de extensão anterior a compressao*/
     /*na ordem, é impresso quantos bytes tem a terminação e a terminação em si*/
-    fwrite((void*)&c_fwrite, 1, sizeof(char), f_zip);
-    fwrite((void*)aux , 1 , sizeof(char)*((unsigned int )c_fwrite), f_zip);
+    fwrite((void*)&c_fwrite, sizeof(char), 1, f_zip);
+    fwrite((void*)aux , sizeof(char)*((unsigned int )c_fwrite) , 1, f_zip);
        
     unsigned int coded_tree_size = get_size_coded_tree(ruffman); 
     printf("\n%d\n", coded_tree_size);
     /*escrevendo em dois bytes o tamanho da arvore codificada
     **é um numero binario impresso ao contrario (AB)- > (BA)*/
     c_fwrite = coded_tree_size%256;
-    fwrite((void*)&c_fwrite, 1 , sizeof(char), f_zip);
+    fwrite((void*)&c_fwrite, sizeof(char) , 1, f_zip);
     c_fwrite = coded_tree_size/256;
-    fwrite((void*)&c_fwrite, 1 , sizeof(char), f_zip);
+    fwrite((void*)&c_fwrite, sizeof(char) , 1, f_zip);
 
 
     bitmap * map_coded_tree = bitmapInit(coded_tree_size);
@@ -152,37 +154,86 @@ void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv ){
     /*escrevendo arvore no arquivo*/
     for(int i =0; i < qtd_bytes; i ++){
         char c = contents[i];
-        fwrite((void*)&c, 1, sizeof(char), f_zip);
+        fwrite((void*)&c, sizeof(char), 1, f_zip);
     }
     
 
     bitmapLibera(map_coded_tree);
+
+    code_and_write_bitmap(f, f_zip, c_tbl, 0 , 8);
+
+
     fclose(f_zip);
 
+    f_zip = fopen(f_zip_dir , "rb");
+    unsigned char aux_vet [13];
+    unsigned char aux_ ;
+    for(int i =0; i< 13; i ++){
+        aux_ = fgetc(f_zip);
+        aux_vet[i] = aux_;
+    }
+    puts("");
+    for(int i =0; i< 13; i ++){
+        printf("%d " , aux_vet[i]);
+    }
 
 
+
+    free(f_zip_dir);
     
     return ;
 }
 
 
-static void code_and_write_bitmap(FILE* f,Code_Table* c_table, int * rem, unsigned int MAX_SIZE){
-    fseek(f, 0, SEEK_SET);
+static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, int * rem, unsigned int MAX_SIZE){
+    fseek(f_in, 0, SEEK_SET);
     bitmap* b = bitmapInit(MAX_SIZE);
 
     unsigned char c =0;
     while(1){
-        c = fgetc(f);
+        c = fgetc(f_in);
+        if(feof(f_in)) break;
         char * string = get_code_table(c_table, (unsigned int )c);
         int index =0;
+
         while(1){
             if(string[index] != '\0'){
+
                 if(string[index] != '0') bitmapAppendLeastSignificantBit(b , 0x01);
                 else bitmapAppendLeastSignificantBit(b, 0);
-                index ++;
+
+                if(bitmapGetLength(b) == bitmapGetMaxSize(b)){
+                    char * contents = bitmapGetContents(b);
+
+                    fwrite((void*)contents, sizeof(char)*(MAX_SIZE/8) , 1, f_out);
+                    memset((void*)contents, 0 , sizeof(char)*(MAX_SIZE/8));
+                    bitMapSetLenght(b, 0);
+
+                }
+            }else {
+                break;
             }
+            index ++;
         }
+
     }
+
+    int n_aprox = 8 - (bitmapGetLength(b)%8);
+
+    if(bitmapGetLength != 0 ){
+        char * contents = bitmapGetContents(b);
+
+        unsigned int lenght_byte=0;
+        unsigned int b_map_lenght = bitmapGetLength(b);
+        if(b_map_lenght%8 ==0 ) lenght_byte = b_map_lenght/8;
+        else lenght_byte = b_map_lenght/8 + 1;
+
+        fwrite((void*)contents, sizeof(char)*lenght_byte , 1, f_out);    
+    }
+
+    if(n_aprox != 0 ) fwrite((void*)&n_aprox, sizeof(char), 1, f_out);
+
+
 
 
     bitmapLibera(b);

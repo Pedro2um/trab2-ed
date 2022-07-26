@@ -53,6 +53,8 @@ int main(int argc, char* argv[]) {
 
    zip(f, c_tbl, ruffman, argv);
 
+   
+
     free_code_table(c_tbl);
     free_freq_table(f_tbl);
     fclose(f);

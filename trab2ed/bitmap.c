@@ -134,4 +134,7 @@ void bitmapLibera (bitmap* bm){
     free (bm);
 }
 
-
+void bitMapSetLenght(bitmap * bm, unsigned int size){
+	bm->length = size;
+	return ;
+}
