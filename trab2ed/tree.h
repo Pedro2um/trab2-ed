@@ -13,6 +13,7 @@ typedef struct tree tree;
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "bitmap.h"
 typedef long long unsigned llu;
 typedef long long ll;
 typedef long double ld;
@@ -64,9 +65,18 @@ int height_tree(tree* a);
 */
 int its_leaf(tree*a );
 
-
+/*
+* retorna a avore filho da esquerda
+*/
 tree* left_child(tree* a );
-
+/*
+* retorna a arvore filho da direita
+*/
 tree* right_child(tree* a);
+
+/*
+* retonra uma arvore especial codificada por um bitmap 
+*/
+tree* recover_tree(bitmap* map);
 
 #endif //TRAB2ED_TREE_H

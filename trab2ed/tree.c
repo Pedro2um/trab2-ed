@@ -113,3 +113,34 @@ tree* right_child(tree* a){
 }
 
 #endif
+
+static tree* private_recover_tree(bitmap* map, unsigned int* index){
+    tree* a = new(0,0);
+    if(bitmapGetBit(map, *index)){
+        char c = 0;
+        *index = *index + 1;
+        for(int i =0; i < 8; i ++ ){
+            c <<= 1;
+            int k = bitmapGetBit(map, *index);
+            if(k) c = c | 0x01;
+            *index = *index  + 1;
+        }
+        *index = *index  - 1;
+        a->c =c;
+        a->left = NULL;
+        a->right = NULL;
+    }else{
+        *index = *index + 1;
+        a->left = private_recover_tree(map, index );
+        *index = *index + 1;
+        a->right = private_recover_tree(map, index);
+    }
+    return a;
+}
+
+tree* recover_tree(bitmap* map){
+    if(!map) return NULL;
+    int index =0;
+    tree* a = private_recover_tree(map, &index);
+    return a;
+}

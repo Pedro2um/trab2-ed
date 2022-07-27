@@ -19,7 +19,7 @@
 static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, int * rem, unsigned int MAX_SIZE);
 void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv );
 void unzip(char * dir );
-static tree* recover_tree(bitmap* map);
+
 
 /***************************************************************************************************************/
 void fill_heap_with_freq_table(binary_heap* b, Freq_Table* f_tbl){
@@ -132,23 +132,21 @@ void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv ){
     fwrite((void*)aux , sizeof(char)*((unsigned int )c_fwrite) , 1, f_zip);
        
     unsigned int coded_tree_size = get_size_coded_tree(ruffman); 
+    unsigned int coded_tree_size_bytes = (coded_tree_size + 7)/8;
     printf("\n%d\n", coded_tree_size);
     /*escrevendo em dois bytes o tamanho da arvore codificada
     **é um numero binario impresso ao contrario (AB)- > (BA)*/
-    c_fwrite = coded_tree_size%256;
+    c_fwrite = coded_tree_size_bytes%256;
+
     fwrite((void*)&c_fwrite, sizeof(char) , 1, f_zip);
-    c_fwrite = coded_tree_size/256;
+    c_fwrite = coded_tree_size_bytes/256;
+
     fwrite((void*)&c_fwrite, sizeof(char) , 1, f_zip);
 
 
     bitmap * map_coded_tree = bitmapInit(coded_tree_size);
     write_coded_tree(ruffman, f_zip, map_coded_tree );
 
-    unsigned int qtd_bytes =0;
-    unsigned int l = bitmapGetLength(map_coded_tree)/8;
-
-    if(bitmapGetLength(map_coded_tree)%8 == 0) qtd_bytes = l;
-    else qtd_bytes = l + 1;
 
     unsigned char * contents = bitmapGetContents(map_coded_tree);
 
@@ -158,7 +156,7 @@ void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv ){
     }
 
     /*escrevendo arvore no arquivo*/
-    for(int i =0; i < qtd_bytes; i ++){
+    for(int i =0; i < coded_tree_size_bytes; i ++){
         char c = contents[i];
         fwrite((void*)&c, sizeof(char), 1, f_zip);
     }
@@ -166,13 +164,13 @@ void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv ){
 
     bitmapLibera(map_coded_tree);
 
-    code_and_write_bitmap(f, f_zip, c_tbl, 0 , (unsigned int)1024*1024*8*256);
+    code_and_write_bitmap(f, f_zip, c_tbl, 0 , (unsigned int)8*1024*1024*256);
 
-
-
-    unzip(f_zip_dir);
 
     fclose(f_zip);
+    unzip(f_zip_dir);
+
+    
     free(f_zip_dir);
 
 
@@ -219,10 +217,7 @@ static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, i
     if(bitmapGetLength != 0 ){
         char * contents = bitmapGetContents(b);
 
-        unsigned int lenght_byte=0;
-        unsigned int b_map_lenght = bitmapGetLength(b);
-        if(b_map_lenght%8 ==0 ) lenght_byte = b_map_lenght/8;
-        else lenght_byte = b_map_lenght/8 + 1;
+        unsigned int lenght_byte= (bitmapGetLength(b) + 7)/8;
 
         fwrite((void*)contents, sizeof(char)*lenght_byte , 1, f_out);    
     }
@@ -239,73 +234,61 @@ static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, i
 
 
 void unzip(char * dir ){
+    
+    
+    FILE* f_in = fopen(dir, "rd");
 
-    FILE* f = fopen(dir, "rb");
+    fseek(f_in, 0 , SEEK_SET);
+    
+    char separator[2] = ".";
+    char * aux = strtok(dir ,separator);
 
-    fseek(f, 0 ,SEEK_SET);
-    char separator[2] =".";
-    char * aux = strtok(dir, separator);
+    unsigned char c_read = fgetc(f_in);
 
-    char name_f[strlen(aux + 1)] ;
+    int tam = c_read;
+    char terminator[tam + 1];
 
-    strcpy(name_f, aux);
-    aux = strtok(NULL, separator);
-    int res = strcmp("comp", aux);
-
-    if(res !=0 ){
-        printf("arquivo com terminação nao esperada");
-        exit (1);
-    }
-
-    unsigned char c_read = 0;
-    c_read = fgetc(f);
-
-    char terminator[c_read + 2 ];
-    terminator[0] = '.';
-    unsigned int n = c_read;
-
-    for(int i =1; i < n + 1 ; i ++){
-        c_read = fgetc(f);
+    for(int i =0; i < tam; i ++){
+        c_read = fgetc(f_in);
         terminator[i] = c_read;
     }
-    terminator[n + 1] = '\0';
+    terminator[tam] = '\0';
 
-    strcat(name_f, terminator);
-    printf("\n\n%s\n\n", name_f);
+    char * new_dir = (char*)calloc(1, sizeof(char)*(strlen(aux) + c_read + 2 + 10));
+    sprintf(new_dir, "./newfile/%s.%s", aux, terminator );
+
+    printf("\n%s", new_dir);
+
+    FILE* f_out  = fopen(new_dir, "wb");
+
+    int size_recovered_tree =0 ;
+    c_read = fgetc(f_in);
+    size_recovered_tree += c_read;
+    c_read = fgetc(f_in);
+    size_recovered_tree += c_read*256;
+    
+    bitmap* recovered_tree = bitmapInit(size_recovered_tree*BYTE_SIZE);
+    bitMapSetLenght(recovered_tree,size_recovered_tree*BYTE_SIZE);
+
+    char * contents = bitmapGetContents(recovered_tree);
+    /*colocando a arvore codificada no vetor do bitmap*/
+    for(int i =0; i < size_recovered_tree; i ++){
+        c_read = fgetc(f_in);
+        contents[i] = c_read;
+    }
 
 
-    char * new_dir = (char*)calloc(1,sizeof(char)*(strlen(name_f) + 1 + strlen("./newfile/")));
-    strcpy(new_dir, "./newfile/");
-    strcat(new_dir, name_f);
+    tree* ruffman_decoded = recover_tree(recovered_tree);
+    show_tree(ruffman_decoded);
+    bitmapLibera(recovered_tree);
 
-    printf("%s", new_dir);
 
-    FILE* new_f = fopen(new_dir, "wb");
-
-    int tree_size_bits = 0;
-
-    /*c_read = fgetc(f);
-    tree_size += c_read;
-    c_read = fgetc(f);
-    tree_size += c_read*256;
-
-    bitmap* recovered_tree = bitmapInit(tree_size);
-
-    int tree_size_bytes =0;
-    if()
-
-    char * tree_arr[] 
-
-    */
-    fclose(new_f);
+    fclose(f_in);
+    fclose(f_out);
     free(new_dir);
-    fclose(f);
-   
+    erase(ruffman_decoded);
     return ;
 
 
 }
 
-static tree* recover_tree(bitmap* map){
-
-}
