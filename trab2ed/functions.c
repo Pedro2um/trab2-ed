@@ -10,7 +10,7 @@
 #define ASCII 256
 
 #define BYTE_SIZE 8
-#define BYTES_READ (unsigned int)8*1024*1024*256
+#define BITS_READ (unsigned int)8*1024*1024*256
 
 
 #define forn(i, n) for(int i =0; i < n ; i ++)
@@ -161,7 +161,7 @@ void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv ){
 
     bitmapLibera(map_coded_tree);
 
-    code_and_write_bitmap(f, f_zip, c_tbl, 0 , BYTES_READ);
+    code_and_write_bitmap(f, f_zip, c_tbl, 0 , BITS_READ);
 
 
     fclose(f_zip);
@@ -275,8 +275,12 @@ void unzip(char * dir ){
     tree* ruffman_decoded = recover_tree_2(f_in);
     show_tree(ruffman_decoded);
     //bitmapLibera(recovered_tree);
-    char aux[11];
+   
     
+    //int flag =0 ;
+    //bitmap* map = bitmapInit(BITS_READ);
+
+
 
     fclose(f_in);
     fclose(f_out);
@@ -287,3 +291,30 @@ void unzip(char * dir ){
 
 }
 
+
+static void read_bitmap_for_unzip(FILE* f_in , bitmap * map, int * flag){
+    unsigned long int pos = ftell(f_in);
+    fseek(f_in, 0 , SEEK_END);
+    unsigned long int  TAM = ftell(f_in);
+
+    fseek(f_in, pos, SEEK_SET);
+
+    char * contents = bitmapGetContents(map);
+
+    if(TAM - pos > BITS_READ/BYTE_SIZE){
+        for(int i; i < BITS_READ/BYTE_SIZE; i ++ ){
+            unsigned char c = fgetc(f_in);
+            contents[i] = c;
+        }
+        bitMapSetLenght(map,BITS_READ);
+    }else{
+        *flag = 1;
+        for( int i =0; i < (TAM - pos); i ++){
+            unsigned char c = fgetc(f_in);
+            contents[i] = c;
+        }
+        bitMapSetLenght(map ,(TAM - pos )*BYTE_SIZE);
+    }
+
+    return ;
+}
