@@ -3,12 +3,13 @@
 
 #include "tree.h"
 #include "headers.h"
+#include <string.h>
 //
 // Created by user on 7/24/2022.
 //
 
 
-
+#define BYTE_SIZE 8
 
 
 typedef struct tree tree;
@@ -21,6 +22,8 @@ struct tree{
     tree* right;
     tree* left;
 };
+
+static tree* private_recover_tree_2(FILE* f_in ,bitmap* map, int * index);
 
 /*
  * Alocação de memória
@@ -115,6 +118,7 @@ tree* right_child(tree* a){
 #endif
 
 static tree* private_recover_tree(bitmap* map, unsigned int* index){
+
     tree* a = new(0,0);
     if(bitmapGetBit(map, *index)){
         char c = 0;
@@ -140,7 +144,73 @@ static tree* private_recover_tree(bitmap* map, unsigned int* index){
 
 tree* recover_tree(bitmap* map){
     if(!map) return NULL;
-    int index =0;
+    unsigned int index =0;
     tree* a = private_recover_tree(map, &index);
     return a;
+}
+
+
+static void appendbyte(bitmap* map, unsigned char c){
+    bitMapSetLenght(map, 0 );
+    unsigned char * contents = bitmapGetContents(map);
+    memset(contents,0 , sizeof(char));
+
+    for(int i =0x80; i != 0; i >>=1 ){
+        if(i & c) bitmapAppendLeastSignificantBit(map, 0x01);
+        else bitmapAppendLeastSignificantBit(map, 0 );
+    }
+}
+
+static int read_bit(bitmap* map, FILE* f_in,int * index){
+    if(*index >=8){
+        unsigned char c = fgetc(f_in);
+        appendbyte(map, c);
+        *index =0 ;
+    }
+    
+    return bitmapGetBit(map, (*index) ++);
+}
+
+static char read_byte(bitmap* map, FILE* f_in,int * index){
+    unsigned char c = 0;
+    for(int i =0; i < BYTE_SIZE; i ++){
+        c <<=1;
+        int n  = read_bit(map, f_in, index);
+        c |= n;
+    }
+    return c;
+}
+
+
+static tree* private_recover_tree_2(FILE* f_in ,bitmap* map, int * index){
+    tree* a = new(0,0);
+    a->freq =0;
+
+    if(read_bit(map, f_in, index)){
+        unsigned char c = read_byte(map, f_in,index);
+        a->c =c;
+        a->left = NULL;
+        a->right = NULL;
+    }else{
+        a->left = private_recover_tree_2(f_in , map, index);
+        a->right = private_recover_tree_2(f_in, map, index);
+        a->c = 0;
+    }
+    return a;
+}
+
+
+tree* recover_tree_2(FILE* f_in){
+    bitmap* map = bitmapInit(BYTE_SIZE);
+    int index = 0 ;
+
+   unsigned char * contents = bitmapGetContents(map);
+    *contents = fgetc(f_in);
+    bitMapSetLenght(map, 8 );
+
+    tree* a = private_recover_tree_2(f_in, map, &index );
+
+    bitmapLibera(map);
+    return a;
+   
 }

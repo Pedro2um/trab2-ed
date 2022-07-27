@@ -10,6 +10,8 @@
 #define ASCII 256
 
 #define BYTE_SIZE 8
+#define BYTES_READ (unsigned int)8*1024*1024*256
+
 
 #define forn(i, n) for(int i =0; i < n ; i ++)
 
@@ -136,12 +138,7 @@ void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv ){
     printf("\n%d\n", coded_tree_size);
     /*escrevendo em dois bytes o tamanho da arvore codificada
     **é um numero binario impresso ao contrario (AB)- > (BA)*/
-    c_fwrite = coded_tree_size_bytes%256;
-
-    fwrite((void*)&c_fwrite, sizeof(char) , 1, f_zip);
-    c_fwrite = coded_tree_size_bytes/256;
-
-    fwrite((void*)&c_fwrite, sizeof(char) , 1, f_zip);
+   
 
 
     bitmap * map_coded_tree = bitmapInit(coded_tree_size);
@@ -164,7 +161,7 @@ void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv ){
 
     bitmapLibera(map_coded_tree);
 
-    code_and_write_bitmap(f, f_zip, c_tbl, 0 , (unsigned int)8*1024*1024*256);
+    code_and_write_bitmap(f, f_zip, c_tbl, 0 , BYTES_READ);
 
 
     fclose(f_zip);
@@ -180,6 +177,7 @@ void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv ){
 
 
 static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, int * rem, unsigned int MAX_SIZE){
+
     fseek(f_in, 0, SEEK_SET);
     bitmap* b = bitmapInit(MAX_SIZE);
 
@@ -261,27 +259,24 @@ void unzip(char * dir ){
 
     FILE* f_out  = fopen(new_dir, "wb");
 
-    int size_recovered_tree =0 ;
-    c_read = fgetc(f_in);
-    size_recovered_tree += c_read;
-    c_read = fgetc(f_in);
-    size_recovered_tree += c_read*256;
     
+    /*
     bitmap* recovered_tree = bitmapInit(size_recovered_tree*BYTE_SIZE);
     bitMapSetLenght(recovered_tree,size_recovered_tree*BYTE_SIZE);
 
     char * contents = bitmapGetContents(recovered_tree);
-    /*colocando a arvore codificada no vetor do bitmap*/
+    
     for(int i =0; i < size_recovered_tree; i ++){
         c_read = fgetc(f_in);
         contents[i] = c_read;
     }
 
-
-    tree* ruffman_decoded = recover_tree(recovered_tree);
+    */
+    tree* ruffman_decoded = recover_tree_2(f_in);
     show_tree(ruffman_decoded);
-    bitmapLibera(recovered_tree);
-
+    //bitmapLibera(recovered_tree);
+    char aux[11];
+    
 
     fclose(f_in);
     fclose(f_out);
