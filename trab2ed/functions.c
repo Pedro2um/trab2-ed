@@ -10,7 +10,7 @@
 #define ASCII 256
 
 #define BYTE_SIZE 8
-#define BITS_READ (unsigned int)8*1024*1024*256
+#define BITS_READ (unsigned int)8*4
 
 
 #define forn(i, n) for(int i =0; i < n ; i ++)
@@ -19,8 +19,11 @@
 /*headers *****************************************************************************************************/
 
 static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, int * rem, unsigned int MAX_SIZE);
+static void read_bitmap_for_unzip(FILE* f_in , bitmap * map, int * flag);
 void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv );
 void unzip(char * dir );
+static void write_uncoded_for_unzip(FILE* f_out,FILE * f_in , tree* ruffman_coded);
+static void search_for_char( FILE* f_in, bitmap* map, tree* ruffman,unsigned char* ret, int * index, long long  int * i);
 
 
 /***************************************************************************************************************/
@@ -210,7 +213,7 @@ static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, i
 
     }
 
-    unsigned char  n_aprox = 8 - (bitmapGetLength(b)%8);
+    unsigned char  n_aprox = bitmapGetLength(b)%8;
 
     if(bitmapGetLength != 0 ){
         char * contents = bitmapGetContents(b);
@@ -277,9 +280,12 @@ void unzip(char * dir ){
     //bitmapLibera(recovered_tree);
    
     
-    //int flag =0 ;
-    //bitmap* map = bitmapInit(BITS_READ);
-
+    
+    
+    write_uncoded_for_unzip(f_out,f_in, ruffman_decoded);
+        
+    
+    
 
 
     fclose(f_in);
@@ -293,16 +299,21 @@ void unzip(char * dir ){
 
 
 static void read_bitmap_for_unzip(FILE* f_in , bitmap * map, int * flag){
-    unsigned long int pos = ftell(f_in);
+
+    unsigned long long int pos = ftell(f_in);
     fseek(f_in, 0 , SEEK_END);
-    unsigned long int  TAM = ftell(f_in);
+    unsigned long long int  TAM = ftell(f_in);
 
     fseek(f_in, pos, SEEK_SET);
 
+ 
     char * contents = bitmapGetContents(map);
 
-    if(TAM - pos > BITS_READ/BYTE_SIZE){
-        for(int i; i < BITS_READ/BYTE_SIZE; i ++ ){
+
+
+    if((TAM - pos) > BITS_READ/BYTE_SIZE){
+
+        for(int i= 0; i < BITS_READ/BYTE_SIZE; i ++ ){
             unsigned char c = fgetc(f_in);
             contents[i] = c;
         }
@@ -317,4 +328,103 @@ static void read_bitmap_for_unzip(FILE* f_in , bitmap * map, int * flag){
     }
 
     return ;
+}
+
+
+static void search_for_char( FILE* f_in, bitmap* map, tree* ruffman,unsigned char* ret, int * index, long long  int * i){
+    if(right_child(ruffman) == NULL){
+
+        *ret = get_char(ruffman);
+        return ;
+    } 
+    if(*index >= BYTE_SIZE){
+        char * contents = bitmapGetContents(map);
+        *contents= fgetc(f_in);
+        *i = *i  + 1  ;
+        *index = 0;
+    }
+    int n = bitmapGetBit(map, *index);
+    if(n){
+        *index = *index +  1;
+        search_for_char(f_in, map, right_child(ruffman), ret, index , i );
+    }else{
+        *index = *index + 1;
+        search_for_char(f_in, map, left_child(ruffman), ret, index , i );
+    }
+    return;
+}
+
+
+
+static void write_uncoded_for_unzip(FILE* f_out,FILE * f_in , tree* ruffman_coded){
+
+    long long unsigned int pos = ftell(f_in);
+    fseek(f_in, 0, SEEK_END);
+    long long unsigned int TAM = ftell(f_in);
+    fseek(f_in, pos, SEEK_SET);
+    
+    bitmap* map = bitmapInit(BYTE_SIZE);
+    bitMapSetLenght(map, BYTE_SIZE);
+    int index =8 ;
+    long long  int i = 0;
+
+    bitmap* map_write = bitmapInit(BITS_READ);
+    unsigned char * char_arr = bitmapGetContents(map_write);
+    unsigned int index_arr = -1 ;
+    unsigned int tam_arr = (BITS_READ + 7)/8;
+    unsigned char ret =0;
+    
+
+
+      
+    
+    
+    
+   while( i < (TAM - pos - 1)){
+        index_arr ++;
+        bitMapSetLenght(map_write , 8*(index_arr + 1) );
+        search_for_char(f_in, map, ruffman_coded,&ret, &index , &i);
+        
+       //printf("\n:%c:%lld:%d", ret, i, index);
+        char_arr[index_arr] = ret;
+
+
+        if(index_arr == tam_arr - 1 ){
+            index_arr = -1;
+            fwrite((void*)char_arr, sizeof(char)*tam_arr, 1, f_out);
+            bitMapSetLenght(map_write, 0 );
+        }
+    }
+    
+
+
+    long unsigned int tam_map = bitmapGetLength(map_write);
+    if(tam_map){
+        fwrite((void*)char_arr, sizeof(char)*(tam_map/8), 1, f_out);
+    }
+
+    if(index >= 8){
+        index =0;
+    }
+
+   unsigned char aux = fgetc(f_in);
+    //printf("%d", aux);
+    int k = 8;
+    if(aux != 0 ){
+        k = aux;
+    }
+    
+    while(k > index){
+        search_for_char(f_in, map, ruffman_coded, &ret, &index, &i);
+
+        //printf("\n:%c:a%d:", ret ,index);
+        fwrite((void*)&ret, 1, sizeof(char), f_out);
+    }
+    
+    
+    bitmapLibera(map);
+    bitmapLibera(map_write);
+
+    return;
+
 }
