@@ -10,10 +10,83 @@
 #define ASCII 256
 
 #define BYTE_SIZE 8
-#define BITS_READ (unsigned int)8*1024*1024*64
+#define BITS_READ (unsigned int)8*1024*1024*32
 
 
 #define forn(i, n) for(int i =0; i < n ; i ++)
+
+typedef struct stream Stream;
+
+struct stream{
+    unsigned char * arr;
+    unsigned int index;
+    unsigned int leght;
+    unsigned int MAX_SIZE;
+    int flag;
+};
+
+static Stream* init_stream(unsigned int MAX_SIZE_bytes){
+    Stream* s = (Stream*)calloc(1 , sizeof(Stream));
+    s->arr = (char*)calloc(MAX_SIZE_bytes, sizeof(char));
+    s->index =0 ;
+    s->leght =0 ;
+    s->MAX_SIZE = MAX_SIZE_bytes;
+    s->flag =0 ;
+    return s ;
+}
+
+static void fill_stream(FILE* f_in, Stream* s ){
+    s->leght =0 ;
+    s->index =0 ;
+
+    unsigned long long int pos = ftell(f_in);
+    fseek(f_in, 0 , SEEK_END);
+    unsigned long long int  TAM = ftell(f_in);
+
+    fseek(f_in, pos, SEEK_SET);
+
+ 
+    char * arr = s->arr;
+
+
+
+    if((TAM - pos) > s->MAX_SIZE){
+
+        for(int i= 0; i < s->MAX_SIZE; i ++ ){
+            unsigned char c = fgetc(f_in);
+            arr[i] = c;
+        }
+        s->leght = s->MAX_SIZE;
+    }else{
+        s->flag = 1;
+        for( int i =0; i < (TAM - pos); i ++){
+            unsigned char c = fgetc(f_in);
+            arr[i] = c;
+        }
+        s->leght = TAM - pos;
+    }
+}
+
+static int stream_get_flag(Stream* s){
+    return s->flag;
+}
+
+static void read_by_stream(Stream* s , unsigned char * c ){
+    *c = s->arr[s->index];
+    s->index ++ ; 
+    return;
+}
+
+static int empty_stream(Stream* s){
+    if(s->index == s->leght) return 1 ;
+    else return 0;
+}
+
+static void free_stream(Stream* s ){
+    free(s->arr);
+    free(s);
+    return;
+}
 
 
 /*headers *****************************************************************************************************/
@@ -168,11 +241,12 @@ void private_zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv ){
     */
 
     /*escrevendo arvore no arquivo*/
-    for(int i =0; i < coded_tree_size_bytes; i ++){
+    fwrite((void*)contents, sizeof(char), coded_tree_size_bytes, f_zip);
+    /*for(int i =0; i < coded_tree_size_bytes; i ++){
         char c = contents[i];
         fwrite((void*)&c, sizeof(char), 1, f_zip);
     }
-    
+    */
 
     bitmapLibera(map_coded_tree);
 
@@ -192,43 +266,51 @@ void private_zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv ){
 static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, int * rem, unsigned int MAX_SIZE){
 
     fseek(f_in, 0, SEEK_SET);
-    bitmap* b = bitmapInit(MAX_SIZE);
+    bitmap* b_writer = bitmapInit(MAX_SIZE);
+    Stream* s = init_stream(MAX_SIZE/8);
+    
+
 
     unsigned char c =0;
-    while(1){
-        c = fgetc(f_in);
-        if(feof(f_in)) break;
-        char * string = get_code_table(c_table, (unsigned int )c);
-        int index =0;
+    while(!stream_get_flag(s)){
+        fill_stream(f_in, s );
+        
+        while(!empty_stream(s)){
+            read_by_stream(s, &c);
+            char * string = get_code_table(c_table, (unsigned int )c);
+            int index =0;
 
-        while(1){
-            if(string[index] != '\0'){
+            while(1){
+                if(string[index] != '\0'){
 
-                if(string[index] != '0') bitmapAppendLeastSignificantBit(b , 0x01);
-                else bitmapAppendLeastSignificantBit(b, 0);
+                    if(string[index] != '0') bitmapAppendLeastSignificantBit(b_writer , 0x01);
+                    else bitmapAppendLeastSignificantBit(b_writer, 0);
 
-                if(bitmapGetLength(b) == bitmapGetMaxSize(b)){
-                    char * contents = bitmapGetContents(b);
+                    if(bitmapGetLength(b_writer) == bitmapGetMaxSize(b_writer)){
+                        char * contents = bitmapGetContents(b_writer);
 
-                    fwrite((void*)contents, sizeof(char)*(MAX_SIZE/8) , 1, f_out);
-                    memset((void*)contents, 0 , sizeof(char)*(MAX_SIZE/8));
-                    bitMapSetLenght(b, 0);
+                        fwrite((void*)contents, sizeof(char)*(MAX_SIZE/8) , 1, f_out);
+                        memset((void*)contents, 0 , sizeof(char)*(MAX_SIZE/8));
+                        bitMapSetLenght(b_writer, 0);
 
+                    }
+                }else {
+                    break;
                 }
-            }else {
-                break;
+                index ++;
             }
-            index ++;
         }
-
     }
 
-    unsigned char  n_aprox = bitmapGetLength(b)%8;
+    unsigned char  n_aprox = bitmapGetLength(b_writer)%8;
+    if(bitmapGetLength(b_writer) != 0 && n_aprox == 0){
+        n_aprox = 8;
+    }
 
-    if(bitmapGetLength != 0 ){
-        char * contents = bitmapGetContents(b);
+    if(bitmapGetLength(b_writer) != 0 ){
+        char * contents = bitmapGetContents(b_writer);
 
-        unsigned int lenght_byte= (bitmapGetLength(b) + 7)/8;
+        unsigned int lenght_byte= (bitmapGetLength(b_writer) + 7)/8;
 
         fwrite((void*)contents, sizeof(char)*lenght_byte , 1, f_out);    
     }
@@ -237,9 +319,8 @@ static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, i
 
 
 
-
-    bitmapLibera(b);
-
+    free_stream(s);
+    bitmapLibera(b_writer);
 }
 
 
@@ -314,7 +395,7 @@ void private_unzip(char * dir ){
 }
 
 
-static void read_bitmap_for_unzip(FILE* f_in , bitmap * map, int * flag){
+static void read_bitmap(FILE* f_in , bitmap * map, int * flag){
 
     unsigned long long int pos = ftell(f_in);
     fseek(f_in, 0 , SEEK_END);
@@ -419,17 +500,20 @@ static void write_uncoded_for_unzip(FILE* f_out,FILE * f_in , tree* ruffman_code
     }
 
    unsigned char aux = fgetc(f_in);
-    //printf("%d", aux);
-    int k = 8;
-    if(aux != 0 ){
-        k = aux;
-    }
+    printf("%d", aux);
     
-    while(k > index){
-        search_for_char(f_in, map, ruffman_coded, &ret, &index, &i);
+    
+    printf("\n%d %d\n", aux, index);
+    if(aux != 8){
+         while(aux >= index){
+         search_for_char(f_in, map, ruffman_coded, &ret, &index, &i);
 
-        //printf("\n:%c:a%d:", ret ,index);
-        fwrite((void*)&ret, 1, sizeof(char), f_out);
+         printf("\n:%d:%d:", ret ,index);
+         break;
+         fwrite((void*)&ret, 1, sizeof(char), f_out);
+    }
+
+
     }
     
     
