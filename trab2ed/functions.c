@@ -133,6 +133,7 @@ void private_zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv ){
 
 
     FILE* f_zip = fopen(f_zip_dir,"wb");
+    if (f_zip == NULL ) exit(1);
     
     aux = strtok(NULL, separator);
 
@@ -441,7 +442,11 @@ static void write_uncoded_for_unzip(FILE* f_out,FILE * f_in , tree* ruffman_code
 
 void zip(char ** argv){
 
-    FILE* f = fopen(argv[1], "rb");
+    int tam  =strlen(argv[1]);
+    
+    char * dir = (char*)calloc(1, sizeof(char)*(tam + 10 ));
+    sprintf(dir, "./target/%s", argv[1]);
+    FILE* f = fopen(dir, "rb");
     if(f == NULL ) exit (1);
     Freq_Table * f_tbl = init_freq_table();
 
@@ -453,7 +458,7 @@ void zip(char ** argv){
     tree* ruffman = ruffman_tree_constructor(b);
     //show_tree(ruffman);
 
-    printf("\n%d\n", height_tree(ruffman));
+    //printf("\n%d\n", height_tree(ruffman));
 
     Code_Table* c_tbl = init_code_table();
     
@@ -467,6 +472,7 @@ void zip(char ** argv){
 
     free_code_table(c_tbl);
     free_freq_table(f_tbl);
+    free(dir);
     fclose(f);
     delete_binary_heap(b);
     erase(ruffman);
@@ -491,6 +497,7 @@ int execute(int argc, char* argv[]){
         printf("\nOperação inválida digitada!\n");
         return -1;
     }
+    printf("\nOpeação realizada com sucesso\n");
     
     return 1;
 }

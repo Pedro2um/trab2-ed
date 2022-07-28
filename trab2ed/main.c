@@ -16,7 +16,7 @@
      *      
      *      (*)   Crie uma pasta chamada "compfile" no mesmo diretório do executável, nessa será colocado o arquivo zipado
      * 
-     *      (**) O Alvo deve estar no mesmo diretório do executável
+     *      (**) Crie uma pasta chamada "target" no mesmo diretório do executável, nessa você deve colocar o ALVO
      * 
      *      Ex.: ./ruffman texto.txt zip
      * 
