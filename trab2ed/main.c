@@ -17,9 +17,7 @@
  *
  */
 
-void solve(){
-    puts("Hello");
-}
+
 
 #include "headers.h"
 int main(int argc, char* argv[]) {
@@ -29,37 +27,7 @@ int main(int argc, char* argv[]) {
     else assert(0);
      */
     
-    
-
-    FILE* f = fopen(argv[1], "rb");
-    if(f == NULL ) exit (1);
-    Freq_Table * f_tbl = init_freq_table();
-
-
-    fread_freq_table(f_tbl, f);
-
-   binary_heap * b = new_binary_heap();
-   fill_heap_with_freq_table(b, f_tbl);
-   tree* ruffman = ruffman_tree_constructor(b);
-   show_tree(ruffman);
-
-    printf("\n%d\n", height_tree(ruffman));
-
-    Code_Table* c_tbl = init_code_table();
-    
-    fill_code_table(c_tbl, ruffman);
-    show_code_table(c_tbl);
-
-
-   zip(f, c_tbl, ruffman, argv);
-
-   
-
-    free_code_table(c_tbl);
-    free_freq_table(f_tbl);
-    fclose(f);
-    delete_binary_heap(b);
-    erase(ruffman);
+    execute(argc,  argv);
     
     return 0;
 }

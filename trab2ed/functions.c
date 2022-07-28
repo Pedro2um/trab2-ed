@@ -10,7 +10,7 @@
 #define ASCII 256
 
 #define BYTE_SIZE 8
-#define BITS_READ (unsigned int)8*4
+#define BITS_READ (unsigned int)8*1024*1024*64
 
 
 #define forn(i, n) for(int i =0; i < n ; i ++)
@@ -19,10 +19,19 @@
 /*headers *****************************************************************************************************/
 
 static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, int * rem, unsigned int MAX_SIZE);
+
 static void read_bitmap_for_unzip(FILE* f_in , bitmap * map, int * flag);
-void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv );
-void unzip(char * dir );
+
+void private_zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv );
+
+void private_unzip(char * dir );
+
+void unzip(char ** argv );
+
+void zip(char ** argv);
+
 static void write_uncoded_for_unzip(FILE* f_out,FILE * f_in , tree* ruffman_coded);
+
 static void search_for_char( FILE* f_in, bitmap* map, tree* ruffman,unsigned char* ret, int * index, long long  int * i);
 
 
@@ -111,15 +120,15 @@ static void write_coded_tree(tree* a, FILE* f, bitmap* map){
     }
 }
 
-void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv ){
+void private_zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv ){
 
     char * dir = _argv[1]; 
     char separator[2] = ".";
     char * aux  = strtok(dir , separator);
-    char * f_zip_dir = (char*)calloc(1 , sizeof(char)*(strlen(aux) + 6 ));
-    
-    strcpy(f_zip_dir, aux);
-    strcat(f_zip_dir, ".comp");
+    char * f_zip_dir = (char*)calloc(1 , sizeof(char)*(strlen(aux) + 17));
+    sprintf(f_zip_dir,"./compfile/%s.comp", aux);
+    //strcpy(f_zip_dir, aux);
+    //strcat(f_zip_dir, ".comp");
 
 
 
@@ -138,7 +147,7 @@ void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv ){
        
     unsigned int coded_tree_size = get_size_coded_tree(ruffman); 
     unsigned int coded_tree_size_bytes = (coded_tree_size + 7)/8;
-    printf("\n%d\n", coded_tree_size);
+    //printf("\n%d\n", coded_tree_size);
     /*escrevendo em dois bytes o tamanho da arvore codificada
     **é um numero binario impresso ao contrario (AB)- > (BA)*/
    
@@ -150,10 +159,12 @@ void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv ){
 
     unsigned char * contents = bitmapGetContents(map_coded_tree);
 
+    /*
     for(int i =0; i < bitmapGetLength(map_coded_tree); i ++){
        int n = bitmapGetBit(map_coded_tree, i );
        printf("%d", n );
     }
+    */
 
     /*escrevendo arvore no arquivo*/
     for(int i =0; i < coded_tree_size_bytes; i ++){
@@ -168,9 +179,7 @@ void zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv ){
 
 
     fclose(f_zip);
-    unzip(f_zip_dir);
 
-    
     free(f_zip_dir);
 
 
@@ -234,16 +243,19 @@ static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, i
 
 
 
-void unzip(char * dir ){
-    
-    
-    FILE* f_in = fopen(dir, "rd");
+void private_unzip(char * dir ){
+
+    int tam_dir = strlen(dir);
+    char *modify_dir = (char*)calloc(1,sizeof(char)*(tam_dir + 12));
+    sprintf(modify_dir, "./compfile/%s", dir);
+
+    FILE* f_in = fopen(modify_dir, "rd");
+    if(f_in == NULL) exit(2);
 
     fseek(f_in, 0 , SEEK_SET);
     
-    char separator[2] = ".";
-    char * aux = strtok(dir ,separator);
-
+    char * aux ;
+    sscanf(dir, "%m[^.]", &aux);
     unsigned char c_read = fgetc(f_in);
 
     int tam = c_read;
@@ -258,9 +270,11 @@ void unzip(char * dir ){
     char * new_dir = (char*)calloc(1, sizeof(char)*(strlen(aux) + c_read + 2 + 10));
     sprintf(new_dir, "./newfile/%s.%s", aux, terminator );
 
-    printf("\n%s", new_dir);
+    //printf("\n%s", new_dir);
+    free(aux);
 
     FILE* f_out  = fopen(new_dir, "wb");
+    if(f_out == NULL) exit(3);
 
     
     /*
@@ -276,7 +290,7 @@ void unzip(char * dir ){
 
     */
     tree* ruffman_decoded = recover_tree_2(f_in);
-    show_tree(ruffman_decoded);
+    //show_tree(ruffman_decoded);
     //bitmapLibera(recovered_tree);
    
     
@@ -291,6 +305,7 @@ void unzip(char * dir ){
     fclose(f_in);
     fclose(f_out);
     free(new_dir);
+    free(modify_dir);
     erase(ruffman_decoded);
     return ;
 
@@ -375,11 +390,6 @@ static void write_uncoded_for_unzip(FILE* f_out,FILE * f_in , tree* ruffman_code
     unsigned char ret =0;
     
 
-
-      
-    
-    
-    
    while( i < (TAM - pos - 1)){
         index_arr ++;
         bitMapSetLenght(map_write , 8*(index_arr + 1) );
@@ -427,4 +437,60 @@ static void write_uncoded_for_unzip(FILE* f_out,FILE * f_in , tree* ruffman_code
 
     return;
 
+}
+
+void zip(char ** argv){
+
+    FILE* f = fopen(argv[1], "rb");
+    if(f == NULL ) exit (1);
+    Freq_Table * f_tbl = init_freq_table();
+
+
+    fread_freq_table(f_tbl, f);
+
+    binary_heap * b = new_binary_heap();
+    fill_heap_with_freq_table(b, f_tbl);
+    tree* ruffman = ruffman_tree_constructor(b);
+    //show_tree(ruffman);
+
+    printf("\n%d\n", height_tree(ruffman));
+
+    Code_Table* c_tbl = init_code_table();
+    
+    fill_code_table(c_tbl, ruffman);
+    //show_code_table(c_tbl);
+
+
+    private_zip(f, c_tbl, ruffman, argv);
+
+   
+
+    free_code_table(c_tbl);
+    free_freq_table(f_tbl);
+    fclose(f);
+    delete_binary_heap(b);
+    erase(ruffman);
+}
+
+void unzip(char ** argv){
+    private_unzip(argv[1]);
+}
+
+int execute(int argc, char* argv[]){
+
+    if(argc < 2){
+        printf("\nFormato de execução digitado incorretamente!\n");
+        return -1;
+    }
+    
+    if(strcmp("zip", argv[2]) == 0 ){
+        zip(argv);
+    }else if(strcmp("unzip", argv[2]) == 0){
+        unzip(argv);
+    }else{
+        printf("\nOperação inválida digitada!\n");
+        return -1;
+    }
+    
+    return 1;
 }
