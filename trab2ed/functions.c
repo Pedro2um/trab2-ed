@@ -51,18 +51,19 @@ static void fill_stream(FILE* f_in, Stream* s ){
 
 
     if((TAM - pos) > s->MAX_SIZE){
-
-        for(int i= 0; i < s->MAX_SIZE; i ++ ){
-            unsigned char c = fgetc(f_in);
-            arr[i] = c;
-        }
+        fread((void*)arr, sizeof(char), s->MAX_SIZE, f_in);
+        //for(int i= 0; i < s->MAX_SIZE; i ++ ){
+            //unsigned char c = fgetc(f_in);
+           // arr[i] = c;
+        //}
         s->leght = s->MAX_SIZE;
     }else{
         s->flag = 1;
-        for( int i =0; i < (TAM - pos); i ++){
-            unsigned char c = fgetc(f_in);
-            arr[i] = c;
-        }
+       // for( int i =0; i < (TAM - pos); i ++){
+          //  unsigned char c = fgetc(f_in);
+           // arr[i] = c;
+        //}
+        fread((void*)arr, sizeof(char), (TAM - pos), f_in);
         s->leght = TAM - pos;
     }
 }
@@ -273,44 +274,43 @@ static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, i
 
     unsigned char c =0;
     while(!stream_get_flag(s)){
+
         fill_stream(f_in, s );
         
         while(!empty_stream(s)){
+
             read_by_stream(s, &c);
             char * string = get_code_table(c_table, (unsigned int )c);
             int index =0;
+            int tam_string = strlen(string);
 
-            while(1){
-                if(string[index] != '\0'){
+            while(index < tam_string){
 
-                    if(string[index] != '0') bitmapAppendLeastSignificantBit(b_writer , 0x01);
-                    else bitmapAppendLeastSignificantBit(b_writer, 0);
+                bitmapAppendLeastSignificantBit(b_writer, string[index]);
 
-                    if(bitmapGetLength(b_writer) == bitmapGetMaxSize(b_writer)){
-                        char * contents = bitmapGetContents(b_writer);
-
-                        fwrite((void*)contents, sizeof(char)*(MAX_SIZE/8) , 1, f_out);
-                        memset((void*)contents, 0 , sizeof(char)*(MAX_SIZE/8));
-                        bitMapSetLenght(b_writer, 0);
-
-                    }
-                }else {
-                    break;
+                if(bitmapGetLength(b_writer) == bitmapGetMaxSize(b_writer)){
+                    char * contents = bitmapGetContents(b_writer);
+                    fwrite((void*)contents, sizeof(char)*(MAX_SIZE/8) , 1, f_out);
+                    bitmapLibera(b_writer);
+                    b_writer = bitmapInit(MAX_SIZE);
                 }
                 index ++;
             }
-        }
-    }
 
-    unsigned char  n_aprox = bitmapGetLength(b_writer)%8;
-    if(bitmapGetLength(b_writer) != 0 && n_aprox == 0){
+        }
+
+    }
+    unsigned int bit_map_leght = bitmapGetLength(b_writer);
+    unsigned char  n_aprox = bit_map_leght%8;
+    /*se for multiplo de 8, entao inseriu tudo */
+    if(bit_map_leght != 0 && n_aprox == 0){
         n_aprox = 8;
     }
 
-    if(bitmapGetLength(b_writer) != 0 ){
+    if(bit_map_leght != 0 ){
         char * contents = bitmapGetContents(b_writer);
 
-        unsigned int lenght_byte= (bitmapGetLength(b_writer) + 7)/8;
+        unsigned int lenght_byte= (bit_map_leght + 7)/8;
 
         fwrite((void*)contents, sizeof(char)*lenght_byte , 1, f_out);    
     }
