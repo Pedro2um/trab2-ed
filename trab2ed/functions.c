@@ -10,7 +10,7 @@
 #define ASCII 256
 
 #define BYTE_SIZE 8
-#define BITS_READ (unsigned int)8*1024*1024*32
+#define BITS_READ (unsigned int)8*1024*1024*64
 
 
 #define forn(i, n) for(int i =0; i < n ; i ++)
@@ -51,19 +51,19 @@ static void fill_stream(FILE* f_in, Stream* s ){
 
 
     if((TAM - pos) > s->MAX_SIZE){
-        fread((void*)arr, sizeof(char), s->MAX_SIZE, f_in);
-        //for(int i= 0; i < s->MAX_SIZE; i ++ ){
-            //unsigned char c = fgetc(f_in);
-           // arr[i] = c;
-        //}
+        //fread((void*)arr, sizeof(char), s->MAX_SIZE, f_in);
+        for(int i= 0; i < s->MAX_SIZE; i ++ ){
+            unsigned char c = fgetc(f_in);
+            arr[i] = c;
+        }
         s->leght = s->MAX_SIZE;
     }else{
         s->flag = 1;
-       // for( int i =0; i < (TAM - pos); i ++){
-          //  unsigned char c = fgetc(f_in);
-           // arr[i] = c;
-        //}
-        fread((void*)arr, sizeof(char), (TAM - pos), f_in);
+        for( int i =0; i < (TAM - pos); i ++){
+           unsigned char c = fgetc(f_in);
+           arr[i] = c;
+        }
+        //fread((void*)arr, sizeof(char), (TAM - pos), f_in);
         s->leght = TAM - pos;
     }
 }
@@ -273,6 +273,7 @@ static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, i
 
 
     unsigned char c =0;
+    
     while(!stream_get_flag(s)){
 
         fill_stream(f_in, s );
@@ -307,15 +308,13 @@ static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, i
         n_aprox = 8;
     }
 
-    if(bit_map_leght != 0 ){
-        char * contents = bitmapGetContents(b_writer);
+    //tirei o if
+    char * contents = bitmapGetContents(b_writer);
+    unsigned int lenght_byte= (bit_map_leght + 7)/8;
+    fwrite((void*)contents, sizeof(char)*lenght_byte , 1, f_out);    
 
-        unsigned int lenght_byte= (bit_map_leght + 7)/8;
 
-        fwrite((void*)contents, sizeof(char)*lenght_byte , 1, f_out);    
-    }
-
-   fwrite((void*)&n_aprox, sizeof(char), 1, f_out);
+    fwrite((void*)&n_aprox, sizeof(char), 1, f_out);
 
 
 

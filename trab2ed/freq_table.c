@@ -40,7 +40,8 @@ void show_freq_table(Freq_Table* f_tbl){
 
 void fread_freq_table(Freq_Table* f_table, FILE * file){
     unsigned char  c = 0;
-    while(fread((void*)&c, sizeof(char), 1 ,file)){
-        f_table->freq_vector[c] ++;
+    while(!feof(file)){
+        c= fgetc(file);
+        f_table->freq_vector[c] ++ ;
     }
 }
