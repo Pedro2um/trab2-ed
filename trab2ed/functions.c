@@ -7,6 +7,7 @@
 #include "tree.h"
 #include <string.h>
 #include "bitmap.h"
+#include "stream.h"
 #define ASCII 256
 
 #define BYTE_SIZE 8
@@ -14,80 +15,6 @@
 
 
 #define forn(i, n) for(int i =0; i < n ; i ++)
-
-typedef struct stream Stream;
-
-struct stream{
-    unsigned char * arr;
-    unsigned int index;
-    unsigned int leght;
-    unsigned int MAX_SIZE;
-    int flag;
-};
-
-static Stream* init_stream(unsigned int MAX_SIZE_bytes){
-    Stream* s = (Stream*)calloc(1 , sizeof(Stream));
-    s->arr = (char*)calloc(MAX_SIZE_bytes, sizeof(char));
-    s->index =0 ;
-    s->leght =0 ;
-    s->MAX_SIZE = MAX_SIZE_bytes;
-    s->flag =0 ;
-    return s ;
-}
-
-static void fill_stream(FILE* f_in, Stream* s ){
-    s->leght =0 ;
-    s->index =0 ;
-
-    unsigned long long int pos = ftell(f_in);
-    fseek(f_in, 0 , SEEK_END);
-    unsigned long long int  TAM = ftell(f_in);
-
-    fseek(f_in, pos, SEEK_SET);
-
- 
-    char * arr = s->arr;
-
-
-
-    if((TAM - pos) > s->MAX_SIZE){
-        //fread((void*)arr, sizeof(char), s->MAX_SIZE, f_in);
-        for(int i= 0; i < s->MAX_SIZE; i ++ ){
-            unsigned char c = fgetc(f_in);
-            arr[i] = c;
-        }
-        s->leght = s->MAX_SIZE;
-    }else{
-        s->flag = 1;
-        for( int i =0; i < (TAM - pos); i ++){
-           unsigned char c = fgetc(f_in);
-           arr[i] = c;
-        }
-        //fread((void*)arr, sizeof(char), (TAM - pos), f_in);
-        s->leght = TAM - pos;
-    }
-}
-
-static int stream_get_flag(Stream* s){
-    return s->flag;
-}
-
-static void read_by_stream(Stream* s , unsigned char * c ){
-    *c = s->arr[s->index];
-    s->index ++ ; 
-    return;
-}
-
-static int empty_stream(Stream* s){
-    if(s->index == s->leght) return 1 ;
-    else return 0;
-}
-
-static void free_stream(Stream* s ){
-    free(s->arr);
-    free(s);
-    return;
-}
 
 
 /*headers *****************************************************************************************************/
@@ -268,39 +195,32 @@ static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, i
 
     fseek(f_in, 0, SEEK_SET);
     bitmap* b_writer = bitmapInit(MAX_SIZE);
-    Stream* s = init_stream(MAX_SIZE/8);
-    
-
+    Stream* s = init_stream(f_in ,MAX_SIZE/8);
 
     unsigned char c =0;
     
-    while(!stream_get_flag(s)){
+    while(read_by_stream(s, &c)){
+            
+        char * string = get_code_table(c_table, (unsigned int )c);
+        int index =0;
+        int tam_string = strlen(string);
 
-        fill_stream(f_in, s );
-        
-        while(!empty_stream(s)){
+        while(index < tam_string){
 
-            read_by_stream(s, &c);
-            char * string = get_code_table(c_table, (unsigned int )c);
-            int index =0;
-            int tam_string = strlen(string);
+            bitmapAppendLeastSignificantBit(b_writer, string[index]);
+            //printf("%c ", string[index]);
 
-            while(index < tam_string){
-
-                bitmapAppendLeastSignificantBit(b_writer, string[index]);
-
-                if(bitmapGetLength(b_writer) == bitmapGetMaxSize(b_writer)){
-                    char * contents = bitmapGetContents(b_writer);
-                    fwrite((void*)contents, sizeof(char)*(MAX_SIZE/8) , 1, f_out);
-                    bitmapLibera(b_writer);
-                    b_writer = bitmapInit(MAX_SIZE);
-                }
-                index ++;
+            if(bitmapGetLength(b_writer) == bitmapGetMaxSize(b_writer)){
+                char * contents = bitmapGetContents(b_writer);
+                fwrite((void*)contents, sizeof(char)*(MAX_SIZE/8) , 1, f_out);
+                bitmapLibera(b_writer);
+                b_writer = bitmapInit(MAX_SIZE);
             }
-
+            index ++;
         }
-
+        //printf("\n");
     }
+
     unsigned int bit_map_leght = bitmapGetLength(b_writer);
     unsigned char  n_aprox = bit_map_leght%8;
     /*se for multiplo de 8, entao inseriu tudo */
@@ -311,12 +231,11 @@ static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, i
     //tirei o if
     char * contents = bitmapGetContents(b_writer);
     unsigned int lenght_byte= (bit_map_leght + 7)/8;
+   
+
     fwrite((void*)contents, sizeof(char)*lenght_byte , 1, f_out);    
-
-
     fwrite((void*)&n_aprox, sizeof(char), 1, f_out);
-
-
+    //printf("%d", n_aprox);
 
     free_stream(s);
     bitmapLibera(b_writer);
@@ -499,20 +418,16 @@ static void write_uncoded_for_unzip(FILE* f_out,FILE * f_in , tree* ruffman_code
     }
 
    unsigned char aux = fgetc(f_in);
-    printf("%d", aux);
+
     
     
-    printf("\n%d %d\n", aux, index);
+    //printf("\n%d %d\n", aux, index);
     if(aux != 8){
-         while(aux >= index){
+         while(aux - 1>= index ){
          search_for_char(f_in, map, ruffman_coded, &ret, &index, &i);
-
-         printf("\n:%d:%d:", ret ,index);
-         break;
+         //printf("\n:%c:%d:", ret ,index);
          fwrite((void*)&ret, 1, sizeof(char), f_out);
-    }
-
-
+        }
     }
     
     
@@ -535,6 +450,7 @@ void zip(char ** argv){
 
 
     fread_freq_table(f_tbl, f);
+    //show_freq_table(f_tbl);
 
     binary_heap * b = new_binary_heap();
     fill_heap_with_freq_table(b, f_tbl);
