@@ -75,7 +75,7 @@ tree* left_child(tree* a );
 tree* right_child(tree* a);
 
 /*
-* retonra uma arvore especial codificada por um bitmap 
+* retorna uma arvore especial codificada por um bitmap 
 */
 tree* recover_tree(bitmap* map);
 

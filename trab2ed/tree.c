@@ -78,6 +78,9 @@ void erase(tree* root){
 
 }
 
+/*
+imprime arvore
+*/
 void show_tree(tree* a){
     if(!a)return;
     printf("< %c: %lld", a->c, a->freq);
@@ -87,71 +90,62 @@ void show_tree(tree* a){
     return;
 }
 
-
+/*
+retorna o maximo entre dois inteiros
+*/
 static int max(int a, int b){
     return ( a > b ) ? a : b;
 }
 
+/*
+retorna a altura da arvore
+*/
 int height_tree(tree* a){
     if(a == NULL) return -1;
     return (1 + max(height_tree(a->right), height_tree(a->left)));
 }
 
-
+/*
+retorna o char armazenado no nó da arvore especificado
+*/
 char get_char(tree* a){
     return a->c;
 }
 
+
+/*
+verifica se um nó é folha 
+*/
 int its_leaf(tree*a){
     return (a->left == NULL && a->right == NULL) ? 1 : 0;
 }
 
+/*
+retorna filho da esquerda
+*/
 tree* left_child(tree* a ){
     return a->left;
 }
 
-
+/*
+retorna filho da direita
+*/
 tree* right_child(tree* a){
     return a->right;
 }
 
 #endif
 
-static tree* private_recover_tree(bitmap* map, unsigned int* index){
-
-    tree* a = new(0,0);
-    if(bitmapGetBit(map, *index)){
-        char c = 0;
-        *index = *index + 1;
-        for(int i =0; i < 8; i ++ ){
-            c <<= 1;
-            int k = bitmapGetBit(map, *index);
-            if(k) c = c | 0x01;
-            *index = *index  + 1;
-        }
-        *index = *index  - 1;
-        a->c =c;
-        a->left = NULL;
-        a->right = NULL;
-    }else{
-        *index = *index + 1;
-        a->left = private_recover_tree(map, index );
-        *index = *index + 1;
-        a->right = private_recover_tree(map, index);
-    }
-    return a;
-}
-
-tree* recover_tree(bitmap* map){
-    if(!map) return NULL;
-    unsigned int index =0;
-    tree* a = private_recover_tree(map, &index);
-    return a;
-}
-
+/*
+percorre os bits de um byte "c" e vai inserindo no bitmap
+insere um byte no vetor de q byte do bitmap
+*/
 
 static void appendbyte(bitmap* map, unsigned char c){
-    bitMapSetLenght(map, 0 );
+    unsigned char * contents = bitmapGetContents(map);
+    *contents = c;
+    return ;
+    /*bitMapSetLenght(map, 0 );
     unsigned char * contents = bitmapGetContents(map);
     memset(contents,0 , sizeof(char));
 
@@ -159,8 +153,13 @@ static void appendbyte(bitmap* map, unsigned char c){
         if(i & c) bitmapAppendLeastSignificantBit(map, 0x01);
         else bitmapAppendLeastSignificantBit(map, 0 );
     }
+    */
 }
 
+/*
+retonra um bit na posicação atual do byte do bitmap
+se o bitmap esvaziar, lê-se um novo byte no arquivo e insere-se no bitmap
+*/
 static int read_bit(bitmap* map, FILE* f_in,int * index){
     if(*index >=8){
         unsigned char c = fgetc(f_in);
@@ -171,6 +170,10 @@ static int read_bit(bitmap* map, FILE* f_in,int * index){
     return bitmapGetBit(map, (*index) ++);
 }
 
+/*
+lê-se um byte inteiro do bitmap de 1 byte, basicamenta chama-se 8 vezes(uma pra cada bit) a funcao read_bit
+vai fazendo-se "or's" pra ir inserindo no byte e o retorna
+*/
 static char read_byte(bitmap* map, FILE* f_in,int * index){
     unsigned char c = 0;
     for(int i =0; i < BYTE_SIZE; i ++){
@@ -181,7 +184,12 @@ static char read_byte(bitmap* map, FILE* f_in,int * index){
     return c;
 }
 
-
+/*
+sempre se cria uma arvore, basta-se decidir se ela irá virar folha ou não
+funcao que recupera a arvore codificada no arquivo codificado 
+se o read_bit retornar 1, significa que é folha, logo teremos um caractere pela frente
+se o read_bit retornar 0, significa que é um nó qualquer, entao seguimos normalmente com a recursao
+*/
 static tree* private_recover_tree_2(FILE* f_in ,bitmap* map, int * index){
     tree* a = new(0,0);
     a->freq =0;
@@ -199,7 +207,10 @@ static tree* private_recover_tree_2(FILE* f_in ,bitmap* map, int * index){
     return a;
 }
 
-
+/*
+funcao que cria uma arvore de huffman decodificando uma arvore codificada no arquivo de entrada
+para isso é chamada a funcao private_recover_tree
+*/
 tree* recover_tree_2(FILE* f_in){
     bitmap* map = bitmapInit(BYTE_SIZE);
     int index = 0 ;
