@@ -23,8 +23,21 @@ struct tree{
     tree* left;
 };
 
-static tree* private_recover_tree_2(FILE* f_in ,bitmap* map, int * index);
+/*////////////////////////////////////////(STATIC)//////////////////////////////////*/
 
+static tree* private_recover_tree(FILE* f_in ,bitmap* map, int * index);
+
+static tree* e(tree* h);
+
+static int max(int a, int b);
+
+static void appendbyte(bitmap* map, unsigned char c);
+
+static int read_bit(bitmap* map, FILE* f_in,int * index);
+
+static char read_byte(bitmap* map, FILE* f_in,int * index);
+
+/*/////////////////////////////////////////////////////////////////////////////////////*/
 /*
  * Alocação de memória
  */
@@ -190,7 +203,7 @@ funcao que recupera a arvore codificada no arquivo codificado
 se o read_bit retornar 1, significa que é folha, logo teremos um caractere pela frente
 se o read_bit retornar 0, significa que é um nó qualquer, entao seguimos normalmente com a recursao
 */
-static tree* private_recover_tree_2(FILE* f_in ,bitmap* map, int * index){
+static tree* private_recover_tree(FILE* f_in ,bitmap* map, int * index){
     tree* a = new(0,0);
     a->freq =0;
 
@@ -200,8 +213,8 @@ static tree* private_recover_tree_2(FILE* f_in ,bitmap* map, int * index){
         a->left = NULL;
         a->right = NULL;
     }else{
-        a->left = private_recover_tree_2(f_in , map, index);
-        a->right = private_recover_tree_2(f_in, map, index);
+        a->left = private_recover_tree(f_in , map, index);
+        a->right = private_recover_tree(f_in, map, index);
         a->c = 0;
     }
     return a;
@@ -211,7 +224,7 @@ static tree* private_recover_tree_2(FILE* f_in ,bitmap* map, int * index){
 funcao que cria uma arvore de huffman decodificando uma arvore codificada no arquivo de entrada
 para isso é chamada a funcao private_recover_tree
 */
-tree* recover_tree_2(FILE* f_in){
+tree* recover_tree(FILE* f_in){
     bitmap* map = bitmapInit(BYTE_SIZE);
     int index = 0 ;
 
@@ -219,7 +232,7 @@ tree* recover_tree_2(FILE* f_in){
     *contents = fgetc(f_in);
     bitMapSetLenght(map, 8 );
 
-    tree* a = private_recover_tree_2(f_in, map, &index );
+    tree* a = private_recover_tree(f_in, map, &index );
 
     bitmapLibera(map);
     return a;

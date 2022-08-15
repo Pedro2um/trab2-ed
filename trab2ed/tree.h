@@ -77,8 +77,8 @@ tree* right_child(tree* a);
 /*
 * retorna uma arvore especial codificada por um bitmap 
 */
-tree* recover_tree(bitmap* map);
 
-tree* recover_tree_2(FILE* f_in);
+
+tree* recover_tree(FILE* f_in);
 
 #endif //TRAB2ED_TREE_H

@@ -42,6 +42,11 @@ f_in = arquivo de entrada (arquivo codificado), usado para que, em caso do bit m
 */
 static void search_for_char( FILE* f_in, bitmap* map, tree* ruffman,unsigned char* ret, int * index, long long  int * i);
 
+static void private_fill_code_table(Code_Table* c_tbl , tree* a, char * string, int index);
+
+static int get_size_coded_tree(tree* a );
+
+static void imprime_arvore_cd(tree* a);
 
 /*//////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
@@ -98,6 +103,7 @@ depois colocamos 1 na posição e chamamos para a direita
 a própria recursividade acerta os valores dos indices, que são decrementados na volta da recursão
 quando uma folha é achada, insere-se uma copia da string resultante na tabela de frequencias na posição que reprensenta aquele caractere
 */
+
 static void private_fill_code_table(Code_Table* c_tbl , tree* a, char * string, int index){
     if(!a) return;
     if(its_leaf(a)){
@@ -341,15 +347,11 @@ void private_unzip(char * dir ){
     if(f_out == NULL) exit(3);
 
  
-    tree* ruffman_decoded = recover_tree_2(f_in);
+    tree* ruffman_decoded = recover_tree(f_in);
    
 
     write_uncoded_for_unzip(f_out,f_in, ruffman_decoded);
         
-    
-    
-
-
     fclose(f_in);
     fclose(f_out);
     free(new_dir);
