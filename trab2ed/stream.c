@@ -42,7 +42,6 @@ void fill_stream( Stream* s ){
     if(s->stream_feof == 1){  
         return;
     }
-  
     FILE* f_in = s->f;
     s->leght =0 ;
     s->index =0 ;
@@ -54,20 +53,9 @@ void fill_stream( Stream* s ){
 
     if((TAM - pos) > s->MAX_SIZE){
         fread((void*)arr, sizeof(char), s->MAX_SIZE, f_in);
-        /*for(int i= 0; i < s->MAX_SIZE; i ++ ){
-            unsigned char c = fgetc(f_in);
-            arr[i] = c;
-        }
-        */
         s->leght = s->MAX_SIZE;
     }else{
-
         s->stream_feof = 1;
-        /*for( int i =0; i < (TAM - pos); i ++){
-           unsigned char c = fgetc(f_in);
-           arr[i] = c;
-        }
-        */
         fread((void*)arr, sizeof(char), (TAM - pos), f_in);
         s->leght = TAM - pos;
     }

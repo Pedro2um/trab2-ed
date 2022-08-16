@@ -21,7 +21,7 @@ void fill_heap_with_freq_table(binary_heap* b, Freq_Table* f_tbl);
 /*
 contrutor da arvore de huffman, utiliza-se uma heap ordenada para tal feito
 */
-tree* ruffman_tree_constructor(binary_heap* b);
+tree* huffman_tree_constructor(binary_heap* b);
 
 /*
 'enche' a tabela de códigos usando uma árvore

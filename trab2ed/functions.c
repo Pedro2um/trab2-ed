@@ -30,7 +30,7 @@ static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, i
 /*
 decodifica os dados do arquivo de entrada e escreve no arquivo de sáida
 */
-static void write_uncoded_for_unzip(FILE* f_out,FILE * f_in , tree* ruffman_coded);
+static void write_uncoded_for_unzip(FILE* f_out,FILE * f_in , tree* huffman_coded);
 
 
 /*
@@ -40,7 +40,7 @@ index = indice do bitmap de 8 bits, usado para percorrer no bitmap, quando o bit
 bitmap = contem um byte do arquivo codificado, sera percorrido e os calores dos seus bits serão utilizados para decodifcar qual byte na arvore ele na realidade representa
 f_in = arquivo de entrada (arquivo codificado), usado para que, em caso do bit map esteja percorrido completamente, seja lido um novo byte de seu conteudo
 */
-static void search_for_char( FILE* f_in, bitmap* map, tree* ruffman,unsigned char* ret, int * index, long long  int * i);
+static void search_for_char( FILE* f_in, bitmap* map, tree* huffman,unsigned char* ret, int * index, long long  int * i);
 
 static void private_fill_code_table(Code_Table* c_tbl , tree* a, char * string, int index);
 
@@ -53,7 +53,7 @@ static void imprime_arvore_cd(tree* a);
 /*
 faz os devidos procedimentos para zipar o arquivo
 */
-void private_zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv );
+void private_zip(FILE* f, Code_Table* c_tbl, tree* huffman, char ** _argv );
 
 /*
 faz os devidos provedimentos para unzipar o arquivo
@@ -88,7 +88,7 @@ void fill_heap_with_freq_table(binary_heap* b, Freq_Table* f_tbl){
 algoritmo que retira dois elementos minimos de uma heap(arvores), junta eles em uma nova arvore, e insere o resultado na heap
 o provesso continua até que haja somente um elemento na heap, o qual é a arvore de huffman
 */
-tree* ruffman_tree_constructor(binary_heap* b){
+tree* huffman_tree_constructor(binary_heap* b){
     while(get_tam_binary_heap(b) >=2){
         insert(b, merge(remove_min(b), remove_min(b)));
     }
@@ -188,17 +188,13 @@ static void write_coded_tree(tree* a, FILE* f, bitmap* map){
 cofica e escreve arvore, abre arquivo de saida e chama 'code_and_write_bitmap'
 */
 
-void private_zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv ){
+void private_zip(FILE* f, Code_Table* c_tbl, tree* huffman, char ** _argv ){
 
     char * dir = _argv[1]; 
     char separator[2] = ".";
     char * aux  = strtok(dir , separator);
     char * f_zip_dir = (char*)calloc(1 , sizeof(char)*(strlen(aux) + 17));
     sprintf(f_zip_dir,"./compfile/%s.comp", aux);
-    //strcpy(f_zip_dir, aux);
-    //strcat(f_zip_dir, ".comp");
-
-
 
     FILE* f_zip = fopen(f_zip_dir,"wb");
     if (f_zip == NULL ) exit(1);
@@ -208,44 +204,32 @@ void private_zip(FILE* f, Code_Table* c_tbl, tree* ruffman, char ** _argv ){
     unsigned char c_fwrite = strlen(aux);
   
 
-
     /*escrevendo bits de controle para o tipo de extensão anterior a compressao*/
     /*na ordem, é impresso quantos bytes tem a terminação e a terminação em si*/
     fwrite((void*)&c_fwrite, sizeof(char), 1, f_zip);
     fwrite((void*)aux , sizeof(char)*((unsigned int )c_fwrite) , 1, f_zip);
        
-    unsigned int coded_tree_size = get_size_coded_tree(ruffman); 
+    unsigned int coded_tree_size = get_size_coded_tree(huffman); 
     unsigned int coded_tree_size_bytes = (coded_tree_size + 7)/8;
     //printf("\n%d\n", coded_tree_size);
     /*escrevendo em dois bytes o tamanho da arvore codificada
     **é um numero binario impresso ao contrario (AB)- > (BA)*/
    
-
-
     bitmap * map_coded_tree = bitmapInit(coded_tree_size);
-    write_coded_tree(ruffman, f_zip, map_coded_tree );
-
+    write_coded_tree(huffman, f_zip, map_coded_tree );
 
     unsigned char * contents = bitmapGetContents(map_coded_tree);
-
-
 
     /*escrevendo arvore no arquivo*/
     fwrite((void*)contents, sizeof(char), coded_tree_size_bytes, f_zip);
    
-    
-
     bitmapLibera(map_coded_tree);
 
     code_and_write_bitmap(f, f_zip, c_tbl, 0 , BITS_READ);
 
-
     fclose(f_zip);
-
     free(f_zip_dir);
 
-
-    
     return ;
 }
 
@@ -257,8 +241,6 @@ retorna a string referente ao codigo daquele byte
 vai inserindo os bits das strings no bitmap até que ele esteja cheio, quando ele encher, ele é escrito no arquivo de saída(arquivo codificado)
 calcula quantos bits faltaram para completar o ultimo byte a ser escrito no arquivo de saida e escreve no final do arquivo
 */
-
-
 static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, int * rem, unsigned int MAX_SIZE){
 
     fseek(f_in, 0, SEEK_SET);
@@ -284,7 +266,6 @@ static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, i
             }
             index ++;
         }
-      
     }
 
     unsigned int bit_map_leght = bitmapGetLength(b_writer);
@@ -294,7 +275,6 @@ static void code_and_write_bitmap(FILE* f_in, FILE* f_out,Code_Table* c_table, i
         n_aprox = 8;
     }
 
-   
     char * contents = bitmapGetContents(b_writer);
     unsigned int lenght_byte= (bit_map_leght + 7)/8;
    
@@ -347,16 +327,16 @@ void private_unzip(char * dir ){
     if(f_out == NULL) exit(3);
 
  
-    tree* ruffman_decoded = recover_tree(f_in);
+    tree* huffman_decoded = recover_tree(f_in);
    
 
-    write_uncoded_for_unzip(f_out,f_in, ruffman_decoded);
+    write_uncoded_for_unzip(f_out,f_in, huffman_decoded);
         
     fclose(f_in);
     fclose(f_out);
     free(new_dir);
     free(modify_dir);
-    erase(ruffman_decoded);
+    erase(huffman_decoded);
     return ;
 
 
@@ -369,10 +349,10 @@ quando o bitmap acaba, ele é preenchido novamente e seu index é zerado
 se chegamos a uma folha, faz ser o que é apontado por ret (retorno) o byte correspondente a aquela folha, e retornamos a recursao
 senao, lemos o bit do bitmap, se for 0 precisamos ir para a esquerda, se for, precisamos ir para a direita
 */
-static void search_for_char( FILE* f_in, bitmap* map, tree* ruffman,unsigned char* ret, int * index, long long  int * i){
+static void search_for_char( FILE* f_in, bitmap* map, tree* huffman,unsigned char* ret, int * index, long long  int * i){
     //verifica se um dos filhos é null, se for é folha, pois a arvore de huffman é completa
-    if(right_child(ruffman) == NULL){
-        *ret = get_char(ruffman);
+    if(right_child(huffman) == NULL){
+        *ret = get_char(huffman);
         return ;
     } 
     /*bitmap vazio sendo preenchido*/
@@ -386,10 +366,10 @@ static void search_for_char( FILE* f_in, bitmap* map, tree* ruffman,unsigned cha
     //se n == 1, vai pra direita, senão vai para esquerda
     if(n){
         *index = *index +  1;
-        search_for_char(f_in, map, right_child(ruffman), ret, index , i );
+        search_for_char(f_in, map, right_child(huffman), ret, index , i );
     }else{
         *index = *index + 1;
-        search_for_char(f_in, map, left_child(ruffman), ret, index , i );
+        search_for_char(f_in, map, left_child(huffman), ret, index , i );
     }
     return;
 }
@@ -402,7 +382,7 @@ o loop funciona até que cheguemos no penultimo byte do arquivo, porque no ultim
 quando o bitmap enche, ele é escrito no arquivo de saida;
 quando saimos do loop, verificamos se faltou escrever no arquivo o bitmap que pode nao estar vazio
 */
-static void write_uncoded_for_unzip(FILE* f_out,FILE * f_in , tree* ruffman_coded){
+static void write_uncoded_for_unzip(FILE* f_out,FILE * f_in , tree* huffman_coded){
 
     long long unsigned int pos = ftell(f_in);
     fseek(f_in, 0, SEEK_END);
@@ -412,7 +392,7 @@ static void write_uncoded_for_unzip(FILE* f_out,FILE * f_in , tree* ruffman_code
     bitmap* map = bitmapInit(BYTE_SIZE);
     bitMapSetLenght(map, BYTE_SIZE);
     int index =8 ;
-    long long  int i = 0;
+    long long unsigned  int i = 0;
 
     bitmap* map_write = bitmapInit(BITS_READ);
     unsigned char * char_arr = bitmapGetContents(map_write);
@@ -420,11 +400,11 @@ static void write_uncoded_for_unzip(FILE* f_out,FILE * f_in , tree* ruffman_code
     unsigned int tam_arr = (BITS_READ + 7)/8;
     unsigned char ret =0;
     
-
+    /*o loop sempre irá quebrar quando chegar ao penultimo byte, após isso precisamos somente verificar se analisamos o ultimo byte todo*/
    while( i < (TAM - pos - 1)){
         index_arr ++;
         bitMapSetLenght(map_write , 8*(index_arr + 1) );
-        search_for_char(f_in, map, ruffman_coded,&ret, &index , &i);
+        search_for_char(f_in, map, huffman_coded,&ret, &index , &i);
 
         char_arr[index_arr] = ret;
 
@@ -450,7 +430,7 @@ static void write_uncoded_for_unzip(FILE* f_out,FILE * f_in , tree* ruffman_code
 
         /*enquanto o penultimo byte nao for totalmente percorrido até um indice valido, decodifica-se bytes na arvore*/
          while(aux - 1>= index ){
-         search_for_char(f_in, map, ruffman_coded, &ret, &index, &i);
+         search_for_char(f_in, map, huffman_coded, &ret, &index, &i);
          fwrite((void*)&ret, 1, sizeof(char), f_out);
         }
     
@@ -479,31 +459,24 @@ void zip(char ** argv){
 
 
     fread_freq_table(f_tbl, f);
-    //show_freq_table(f_tbl);
-
+    
     binary_heap * b = new_binary_heap();
     fill_heap_with_freq_table(b, f_tbl);
-    tree* ruffman = ruffman_tree_constructor(b);
-    //show_tree(ruffman);
-
-    //printf("\n%d\n", height_tree(ruffman));
+    tree* huffman = huffman_tree_constructor(b);
+    
 
     Code_Table* c_tbl = init_code_table();
     
-    fill_code_table(c_tbl, ruffman);
-    //show_code_table(c_tbl);
+    fill_code_table(c_tbl, huffman);
 
-
-    private_zip(f, c_tbl, ruffman, argv);
-
-   
+    private_zip(f, c_tbl, huffman, argv);
 
     free_code_table(c_tbl);
     free_freq_table(f_tbl);
     free(dir);
     fclose(f);
     delete_binary_heap(b);
-    erase(ruffman);
+    erase(huffman);
 }
 
 /*

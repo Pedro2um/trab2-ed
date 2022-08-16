@@ -8,6 +8,8 @@
 #ifndef TRAB2ED_MAIN_H
 #define TRAB2ED_MAIN_H
 
+#include <stdio.h>
+#include <stdlib.h>
 #include "headers.h"
 #include "heap.h"
 #include "tree.h"

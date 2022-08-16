@@ -25,6 +25,9 @@ struct tree{
 
 /*////////////////////////////////////////(STATIC)//////////////////////////////////*/
 
+/*
+
+*/
 static tree* private_recover_tree(FILE* f_in ,bitmap* map, int * index);
 
 static tree* e(tree* h);
@@ -58,7 +61,7 @@ tree* new(llu freq, char c){
 
 /*
  * Une duas arvores e cria um nó pai que não possui um caractere associado
- */
+*/
 tree* merge(tree* a, tree* b){
     tree* parent = new(0,0);
     parent->left = a;
@@ -147,7 +150,6 @@ tree* right_child(tree* a){
     return a->right;
 }
 
-#endif
 
 /*
 percorre os bits de um byte "c" e vai inserindo no bitmap
@@ -238,3 +240,5 @@ tree* recover_tree(FILE* f_in){
     return a;
    
 }
+
+#endif
